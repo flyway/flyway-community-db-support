@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-community-db-support</artifactId>
-        <version>10.1.0</version>
+        <version>10.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>flyway-database-ignite</artifactId>
