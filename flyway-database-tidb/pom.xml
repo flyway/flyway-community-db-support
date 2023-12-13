@@ -38,6 +38,12 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>flyway-mysql</artifactId>
             <version>10.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

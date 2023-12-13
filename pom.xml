@@ -43,6 +43,7 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>10.2.0</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
