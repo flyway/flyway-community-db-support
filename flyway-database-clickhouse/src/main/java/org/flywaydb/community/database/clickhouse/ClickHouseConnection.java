@@ -13,34 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.flywaydb.community.database.ignite.thin;
-
-import java.sql.SQLException;
+package org.flywaydb.community.database.clickhouse;
 
 import org.flywaydb.core.internal.database.base.Connection;
-import org.flywaydb.core.internal.database.base.Schema;
 
-/**
- * Apache Ignite Thin connection.
- */
-public class IgniteThinConnection extends Connection<IgniteThinDatabase> {
+import java.sql.SQLException;
+import java.util.Optional;
 
-    IgniteThinConnection(IgniteThinDatabase database, java.sql.Connection connection) {
+public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
+    ClickHouseConnection(ClickHouseDatabase database, java.sql.Connection connection) {
         super(database, connection);
     }
 
     @Override
-    public void doChangeCurrentSchemaOrSearchPathTo(String schema) throws SQLException {
-        getJdbcConnection().setSchema(schema);
-    }
-
-    @Override
-    public Schema getSchema(String name) {
-        return new IgniteThinSchema(jdbcTemplate, database, name);
-    }
-
-    @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
-        return getJdbcConnection().getSchema();
+        return Optional.ofNullable(getJdbcTemplate().getConnection().getSchema()).map(database::unQuote).orElse(null);
+    }
+
+    @Override
+    public void doChangeCurrentSchemaOrSearchPathTo(String schema) throws SQLException {
+        getJdbcTemplate().getConnection().setSchema(schema);
+    }
+
+    @Override
+    public ClickHouseSchema getSchema(String name) {
+        return new ClickHouseSchema(jdbcTemplate, database, name);
     }
 }

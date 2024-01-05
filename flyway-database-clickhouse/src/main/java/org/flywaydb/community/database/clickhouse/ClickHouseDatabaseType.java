@@ -13,51 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.flywaydb.community.database.postgresql.yugabytedb;
+package org.flywaydb.community.database.clickhouse;
 
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.internal.database.base.Database;
+import org.flywaydb.core.internal.database.base.BaseDatabaseType;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.core.internal.parser.Parser;
 import org.flywaydb.core.internal.parser.ParsingContext;
-import org.flywaydb.database.postgresql.PostgreSQLDatabaseType;
 
 import java.sql.Connection;
-import java.util.regex.Pattern;
 
-public class YugabyteDBDatabaseType extends PostgreSQLDatabaseType {
+public class ClickHouseDatabaseType extends BaseDatabaseType {
     @Override
     public String getName() {
-        return "YugabyteDB";
+        return "ClickHouse";
+    }
+
+    @Override
+    public int getNullType() {
+        return 0;
     }
 
     @Override
     public boolean handlesJDBCUrl(String url) {
-        return url.startsWith("jdbc:postgresql:") || url.startsWith("jdbc:p6spy:postgresql:");
+        return url.startsWith("jdbc:clickhouse:");
     }
 
     @Override
-    public int getPriority() {
-        // Should be checked before plain PostgreSQL
-        return 1;
+    public String getDriverClass(String url, ClassLoader classLoader) {
+        return "com.clickhouse.jdbc.ClickHouseDriver";
+    }
+
+    @Override
+    public String getBackupDriverClass(String url, ClassLoader classLoader) {
+        return "ru.yandex.clickhouse.ClickHouseDriver";
     }
 
     @Override
     public boolean handlesDatabaseProductNameAndVersion(String databaseProductName, String databaseProductVersion, Connection connection) {
-        // The YB is what distinguishes Yugabyte
-        return databaseProductName.startsWith("PostgreSQL")
-                && Pattern.matches("PostgreSQL\\s\\d{1,2}(\\.\\d{1,2})?-YB-\\d{1,2}(\\.\\d{1,2})?.*", getSelectVersionOutput(connection));
+        return databaseProductName.startsWith("ClickHouse");
     }
 
     @Override
-    public Database createDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
-        return new YugabyteDBDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
+    public ClickHouseDatabase createDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
+        return new ClickHouseDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
-        return new YugabyteDBParser(configuration, parsingContext);
+        return new ClickHouseParser(configuration, parsingContext, 3);
+    }
+
+    @Override
+    public boolean detectUserRequiredByUrl(String url) {
+        return !url.contains("user=");
+    }
+
+    @Override
+    public boolean detectPasswordRequiredByUrl(String url) {
+        return !url.contains("password=");
     }
 }

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.flywaydb.community.database.postgresql.yugabytedb;
+package org.flywaydb.community.database.clickhouse;
 
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.internal.parser.Parser;
 import org.flywaydb.core.internal.parser.ParsingContext;
-import org.flywaydb.database.postgresql.PostgreSQLParser;
 
-public class YugabyteDBParser extends PostgreSQLParser {
-    protected YugabyteDBParser(Configuration configuration, ParsingContext parsingContext) {
-        super(configuration, parsingContext);
+public class ClickHouseParser extends Parser {
+    protected ClickHouseParser(Configuration configuration, ParsingContext parsingContext, int peekDepth) {
+        super(configuration, parsingContext, peekDepth);
     }
 }

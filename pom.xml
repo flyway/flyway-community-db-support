@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (C) Red Gate Software Ltd 2010-2023
+    Copyright (C) Red Gate Software Ltd 2010-2024
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,17 +21,18 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
-        <version>10.2.0</version>
+        <version>10.4.1</version>
         <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.2.1-SNAPSHOT</version>
+    <version>10.4.2-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
     <modules>
+        <module>flyway-database-clickhouse</module>
         <module>flyway-database-tidb</module>
         <module>flyway-database-ignite</module>
         <module>flyway-database-yugabytedb</module>
@@ -42,7 +43,7 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>flyway-core</artifactId>
-                <version>10.2.0</version>
+                <version>10.4.1</version>
                 <scope>provided</scope>
             </dependency>
         </dependencies>

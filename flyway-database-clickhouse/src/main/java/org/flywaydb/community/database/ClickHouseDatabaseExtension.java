@@ -22,15 +22,15 @@ import org.flywaydb.core.internal.util.FileUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class TiDBDatabaseExtension implements PluginMetadata {
+public class ClickHouseDatabaseExtension implements PluginMetadata {
     public String getDescription() {
-        return "Community-contributed TiDB (Titanium DB) database support extension " + readVersion() + " by Redgate";
+        return "Community-contributed Ignite database support extension " + readVersion() + " by Redgate";
     }
 
     private static String readVersion() {
         try {
             return FileUtils.copyToString(
-                    TiDBDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/version.txt"),
+                    ClickHouseDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/clickhouse/version.txt"),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new FlywayException("Unable to read extension version: " + e.getMessage(), e);
