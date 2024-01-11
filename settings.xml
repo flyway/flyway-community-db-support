@@ -1,0 +1,26 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+      <id>github</id>
+      <properties>
+        <snapshotRepository.id>github</snapshotRepository.id>
+        <snapshotRepository.name>Flyway Community DB Support Maven Packages</snapshotRepository.name>
+        <snapshotRepository.url>https://maven.pkg.github.com/flyway/flyway-community-db-support</snapshotRepository.url>
+
+        <releaseRepository.id>github</releaseRepository.id>
+        <releaseRepository.name>Flyway Community DB Support Maven Packages</releaseRepository.name>
+        <releaseRepository.url>https://maven.pkg.github.com/flyway/flyway-community-db-support</releaseRepository.url>
+      </properties>
+    </profile>
+  </profiles>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>flyway</username>
+      <password>${env.GITHUB_TOKEN}</password>
+    </server>
+  </servers>
+</settings>
