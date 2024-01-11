@@ -27,6 +27,6 @@ jobs:
         run: mvn -B install --file pom.xml
       - name: Publish to GitHub Packages Apache Maven
         if: contains(github.ref, 'main')
-        run: mvn -B deploy -Pgithub
+        run: mvn -B deploy -Pgithub -s $GITHUB_WORKSPACE/settings.xml
         env:
           GITHUB_TOKEN: ${{ github.token }}
