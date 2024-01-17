@@ -31,7 +31,6 @@
     <name>${project.artifactId}</name>
 
     <modules>
-        <module>flyway-database-clickhouse</module>
         <module>flyway-database-tidb</module>
         <module>flyway-database-ignite</module>
         <module>flyway-database-yugabytedb</module>
