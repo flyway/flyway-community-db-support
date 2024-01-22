@@ -22,6 +22,7 @@
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
         <version>10.6.0</version>
+        <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,10 +32,10 @@
     <name>${project.artifactId}</name>
 
     <modules>
-        <module>flyway-database-clickhouse</module>
         <module>flyway-database-tidb</module>
         <module>flyway-database-ignite</module>
         <module>flyway-database-yugabytedb</module>
+        <module>flyway-database-clickhouse</module>
     </modules>
 
     <dependencyManagement>
