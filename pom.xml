@@ -36,6 +36,7 @@
         <module>flyway-database-ignite</module>
         <module>flyway-database-yugabytedb</module>
         <module>flyway-database-clickhouse</module>
+        <module>flyway-database-oceanbase</module>
     </modules>
 
     <dependencyManagement>
