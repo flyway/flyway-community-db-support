@@ -17,8 +17,10 @@ package org.flywaydb.community.database.clickhouse;
 
 import org.flywaydb.core.internal.database.base.Schema;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
+import org.flywaydb.core.internal.util.StringUtils;
 
 import java.sql.SQLException;
+import java.util.Optional;
 
 public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable> {
     /**
@@ -44,7 +46,9 @@ public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable
 
     @Override
     protected void doCreate() throws SQLException {
-        jdbcTemplate.executeStatement("CREATE DATABASE " + database.quote(name));
+        String clusterName = database.getClusterName();
+        boolean isClustered = StringUtils.hasText(clusterName);
+        jdbcTemplate.executeStatement("CREATE DATABASE " + database.quote(name) + (isClustered ? (" ON CLUSTER " + clusterName) : ""));
     }
 
     @Override
@@ -52,7 +56,9 @@ public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable
         if (jdbcTemplate.getConnection().getSchema().equals(name)) {
             jdbcTemplate.getConnection().setSchema("default");
         }
-        jdbcTemplate.executeStatement("DROP DATABASE " + database.quote(name));
+        String clusterName = database.getClusterName();
+        boolean isClustered = StringUtils.hasText(clusterName);
+        jdbcTemplate.executeStatement("DROP DATABASE " + database.quote(name) + (isClustered ? (" ON CLUSTER " + clusterName) : ""));
     }
 
     @Override
