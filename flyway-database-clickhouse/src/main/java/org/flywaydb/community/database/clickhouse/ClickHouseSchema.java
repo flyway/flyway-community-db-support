@@ -34,21 +34,24 @@ public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable
 
     @Override
     protected boolean doExists() throws SQLException {
-        int i = jdbcTemplate.queryForInt("SELECT COUNT() FROM system.databases WHERE name = ?", name);
+        ClickHouseConnection systemConnection = database.getSystemConnection();
+        int i = systemConnection.getJdbcTemplate().queryForInt("SELECT COUNT() FROM system.databases WHERE name = ?", name);
         return i > 0;
     }
 
     @Override
     protected boolean doEmpty() throws SQLException {
-        int i = jdbcTemplate.queryForInt("SELECT COUNT() FROM system.tables WHERE database = ?", name);
+        ClickHouseConnection systemConnection = database.getSystemConnection();
+        int i = systemConnection.getJdbcTemplate().queryForInt("SELECT COUNT() FROM system.tables WHERE database = ?", name);
         return i == 0;
     }
 
     @Override
     protected void doCreate() throws SQLException {
+        ClickHouseConnection systemConnection = database.getSystemConnection();
         String clusterName = database.getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
-        jdbcTemplate.executeStatement("CREATE DATABASE " + database.quote(name) + (isClustered ? (" ON CLUSTER " + clusterName) : ""));
+        systemConnection.getJdbcTemplate().executeStatement("CREATE DATABASE " + database.quote(name) + (isClustered ? (" ON CLUSTER " + clusterName) : ""));
     }
 
     @Override
@@ -70,7 +73,8 @@ public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable
 
     @Override
     protected ClickHouseTable[] doAllTables() throws SQLException {
-        return jdbcTemplate.queryForStringList("SELECT name FROM system.tables WHERE database = ?", name)
+        ClickHouseConnection systemConnection = database.getSystemConnection();
+        return systemConnection.getJdbcTemplate().queryForStringList("SELECT name FROM system.tables WHERE database = ?", name)
                 .stream()
                 .map(this::getTable)
                 .toArray(ClickHouseTable[]::new);
