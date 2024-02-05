@@ -21,13 +21,19 @@ import java.sql.SQLException;
 import java.util.Optional;
 
 public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
+    private static final String DEFAULT_CATALOG_TERM = "database";
+
     ClickHouseConnection(ClickHouseDatabase database, java.sql.Connection connection) {
         super(database, connection);
     }
 
     @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
-        return Optional.ofNullable(getJdbcTemplate().getConnection().getCatalog()).map(database::unQuote).orElse(null);
+        var jdbcConnection = getJdbcTemplate().getConnection();
+        var currentSchema = DEFAULT_CATALOG_TERM.equals(jdbcConnection.getMetaData().getCatalogTerm()) ?
+                jdbcConnection.getCatalog() : jdbcConnection.getSchema();
+
+        return Optional.ofNullable(currentSchema).map(database::unQuote).orElse(null);
     }
 
     @Override
@@ -35,11 +41,17 @@ public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
         // databaseTerm is catalog since driver version 0.5.0
         // https://github.com/ClickHouse/clickhouse-java/issues/1273 & https://github.com/dbeaver/dbeaver/issues/19383
         // For compatibility with old libraries, ((ClickHouseConnection) getJdbcConnection()).useCatalog() should be checked
-        getJdbcTemplate().getConnection().setCatalog(schema);
+        var connection = getJdbcTemplate().getConnection();
+
+        if (DEFAULT_CATALOG_TERM.equals(connection.getMetaData().getCatalogTerm())) {
+            connection.setCatalog(schema);
+        } else {
+            connection.setSchema(schema);
+        }
     }
 
     @Override
     public ClickHouseSchema getSchema(String name) {
-        return new ClickHouseSchema(jdbcTemplate, database, name);
+        return new ClickHouseSchema(getJdbcTemplate(), database, name);
     }
 }
