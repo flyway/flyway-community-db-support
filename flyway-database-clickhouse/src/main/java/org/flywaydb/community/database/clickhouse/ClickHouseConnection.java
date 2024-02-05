@@ -27,12 +27,15 @@ public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
 
     @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
-        return Optional.ofNullable(getJdbcTemplate().getConnection().getSchema()).map(database::unQuote).orElse(null);
+        return Optional.ofNullable(getJdbcTemplate().getConnection().getCatalog()).map(database::unQuote).orElse(null);
     }
 
     @Override
     public void doChangeCurrentSchemaOrSearchPathTo(String schema) throws SQLException {
-        getJdbcTemplate().getConnection().setSchema(schema);
+        // databaseTerm is catalog since driver version 0.5.0
+        // https://github.com/ClickHouse/clickhouse-java/issues/1273 & https://github.com/dbeaver/dbeaver/issues/19383
+        // For compatibility with old libraries, ((ClickHouseConnection) getJdbcConnection()).useCatalog() should be checked
+        getJdbcTemplate().getConnection().setCatalog(schema);
     }
 
     @Override
