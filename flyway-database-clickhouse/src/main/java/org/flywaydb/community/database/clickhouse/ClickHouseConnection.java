@@ -30,7 +30,7 @@ public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
     @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
         var jdbcConnection = getJdbcTemplate().getConnection();
-        var currentSchema = DEFAULT_CATALOG_TERM.equals(jdbcConnection.getMetaData().getCatalogTerm()) ?
+        var currentSchema = useCatalog(jdbcConnection) ?
                 jdbcConnection.getCatalog() : jdbcConnection.getSchema();
 
         return Optional.ofNullable(currentSchema).map(database::unQuote).orElse(null);
@@ -41,13 +41,17 @@ public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
         // databaseTerm is catalog since driver version 0.5.0
         // https://github.com/ClickHouse/clickhouse-java/issues/1273 & https://github.com/dbeaver/dbeaver/issues/19383
         // For compatibility with old libraries, ((ClickHouseConnection) getJdbcConnection()).useCatalog() should be checked
-        var connection = getJdbcTemplate().getConnection();
+        var jdbcConnection = getJdbcTemplate().getConnection();
 
-        if (DEFAULT_CATALOG_TERM.equals(connection.getMetaData().getCatalogTerm())) {
-            connection.setCatalog(schema);
+        if (useCatalog(jdbcConnection)) {
+            jdbcConnection.setCatalog(schema);
         } else {
-            connection.setSchema(schema);
+            jdbcConnection.setSchema(schema);
         }
+    }
+
+    protected boolean useCatalog(java.sql.Connection jdbcConnection) throws SQLException {
+        return DEFAULT_CATALOG_TERM.equals(jdbcConnection.getMetaData().getCatalogTerm());
     }
 
     @Override
