@@ -52,6 +52,6 @@ public class ClickHouseConnection extends Connection<ClickHouseDatabase> {
 
     @Override
     public ClickHouseSchema getSchema(String name) {
-        return new ClickHouseSchema(getJdbcTemplate(), database, name);
+        return new ClickHouseSchema(jdbcTemplate, database, name);
     }
 }
