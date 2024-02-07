@@ -23,6 +23,9 @@ import java.sql.SQLException;
 import java.util.Optional;
 
 public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable> {
+
+    private static final String DEFAULT_SCHEMA = "default";
+
     /**
      * @param jdbcTemplate The Jdbc Template for communicating with the DB.
      * @param database The database-specific support.
@@ -56,8 +59,8 @@ public class ClickHouseSchema extends Schema<ClickHouseDatabase, ClickHouseTable
 
     @Override
     protected void doDrop() throws SQLException {
-        if (jdbcTemplate.getConnection().getCatalog().equals(name)) {
-            jdbcTemplate.getConnection().setCatalog(Optional.ofNullable(database.getConfiguration().getDefaultSchema()).orElse("default"));
+        if (database.getMainConnection().getCurrentSchemaNameOrSearchPath().equals(name)) {
+            database.getMainConnection().doChangeCurrentSchemaOrSearchPathTo(Optional.ofNullable(database.getConfiguration().getDefaultSchema()).orElse(DEFAULT_SCHEMA));
         }
         String clusterName = database.getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
