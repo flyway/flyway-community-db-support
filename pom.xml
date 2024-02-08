@@ -38,6 +38,7 @@
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
         <module>flyway-database-databricks</module>
+        <module>flyway-community-db-support-archetype</module>
     </modules>
 
     <properties>
