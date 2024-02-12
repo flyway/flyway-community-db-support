@@ -15,6 +15,7 @@
  */
 package org.flywaydb.community.database.ignite.thin;
 
+import org.flywaydb.community.database.IgniteDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Database;
@@ -68,5 +69,10 @@ public class IgniteThinDatabaseType extends BaseDatabaseType {
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
         return new IgniteThinParser(configuration, parsingContext);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return IgniteDatabaseExtension.readVersion();
     }
 }
