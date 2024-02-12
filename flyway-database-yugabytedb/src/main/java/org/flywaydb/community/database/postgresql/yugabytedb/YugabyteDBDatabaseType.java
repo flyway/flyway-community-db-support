@@ -15,6 +15,7 @@
  */
 package org.flywaydb.community.database.postgresql.yugabytedb;
 
+import org.flywaydb.community.database.YugabyteDBDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Database;
@@ -59,5 +60,10 @@ public class YugabyteDBDatabaseType extends PostgreSQLDatabaseType {
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
         return new YugabyteDBParser(configuration, parsingContext);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return YugabyteDBDatabaseExtension.readVersion();
     }
 }
