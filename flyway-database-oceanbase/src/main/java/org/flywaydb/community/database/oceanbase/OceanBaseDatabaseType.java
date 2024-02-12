@@ -15,6 +15,7 @@
  */
 package org.flywaydb.community.database.oceanbase;
 
+import org.flywaydb.community.database.OceanBaseDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -95,5 +96,10 @@ public class OceanBaseDatabaseType extends BaseDatabaseType {
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
         return new MySQLParser(configuration, parsingContext);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return OceanBaseDatabaseExtension.readVersion();
     }
 }
