@@ -15,6 +15,7 @@
  */
 package org.flywaydb.community.database.clickhouse;
 
+import org.flywaydb.community.database.ClickHouseDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -74,5 +75,10 @@ public class ClickHouseDatabaseType extends BaseDatabaseType {
     @Override
     public boolean detectPasswordRequiredByUrl(String url) {
         return !url.contains("password=");
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return ClickHouseDatabaseExtension.readVersion();
     }
 }

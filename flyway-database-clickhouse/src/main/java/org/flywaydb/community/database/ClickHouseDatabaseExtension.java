@@ -27,7 +27,7 @@ public class ClickHouseDatabaseExtension implements PluginMetadata {
         return "Community-contributed ClickHouse database support extension " + readVersion() + " by Redgate";
     }
 
-    private static String readVersion() {
+    public static String readVersion() {
         try {
             return FileUtils.copyToString(
                     ClickHouseDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/clickhouse/version.txt"),
