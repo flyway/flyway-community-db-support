@@ -22,15 +22,15 @@ import org.flywaydb.core.internal.util.FileUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class ClickHouseDatabaseExtension implements PluginMetadata {
+public class OceanBaseDatabaseExtension implements PluginMetadata {
     public String getDescription() {
-        return "Community-contributed ClickHouse database support extension " + readVersion() + " by Redgate";
+        return "Community-contributed OceanBase database support extension " + readVersion() + " by Redgate";
     }
 
     public static String readVersion() {
         try {
             return FileUtils.copyToString(
-                    ClickHouseDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/clickhouse/version.txt"),
+                    OceanBaseDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/oceanbase/version.txt"),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new FlywayException("Unable to read extension version: " + e.getMessage(), e);

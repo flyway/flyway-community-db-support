@@ -15,6 +15,7 @@
  */
 package org.flywaydb.community.database.mysql.tidb;
 
+import org.flywaydb.community.database.TiDBDatabaseExtension;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.database.mysql.MySQLConnection;
@@ -45,5 +46,10 @@ public class TiDBDatabaseType extends MySQLDatabaseType {
     @Override
     public Database createDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
         return new TiDBDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return TiDBDatabaseExtension.readVersion();
     }
 }
