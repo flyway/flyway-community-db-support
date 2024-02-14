@@ -1,6 +1,7 @@
 package org.flywaydb.community.database.example;
 
 import java.sql.Connection;
+import org.flywaydb.community.database.ExampleDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -49,5 +50,10 @@ public class ExampleDatabaseType extends BaseDatabaseType {
   public Parser createParser(final Configuration configuration, final ResourceProvider resourceProvider,
       final ParsingContext parsingContext) {
     return null;
+  }
+
+  @Override
+  public String getPluginVersion(Configuration config) {
+    return ExampleDatabaseExtension.readVersion();
   }
 }
