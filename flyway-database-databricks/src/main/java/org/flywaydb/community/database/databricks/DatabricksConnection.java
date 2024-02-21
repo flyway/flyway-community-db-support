@@ -15,13 +15,13 @@ public class DatabricksConnection extends Connection<DatabricksDatabase> {
     @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
         String defaultSchema = "default";
-        String currentSchema = jdbcTemplate.queryForString("SELECT current_database();");
+        String currentSchema = jdbcTemplate.queryForString("SELECT current_schema();");
         return (currentSchema != null) ? currentSchema : defaultSchema;
     }
 
     @Override
     public void doChangeCurrentSchemaOrSearchPathTo(String schema) throws SQLException {
-        String sql = "USE DATABASE " + database.doQuote(schema) + ";";
+        String sql = "USE SCHEMA" + database.doQuote(schema) + ";";
         jdbcTemplate.execute(sql);
     }
 

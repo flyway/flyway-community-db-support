@@ -32,7 +32,7 @@ public class DatabricksDatabase extends Database<DatabricksConnection> {
 
     @Override
     public boolean supportsDdlTransactions() {
-        // Databricks i non-transactional
+        // Databricks is non-transactional
         return false;
     }
 
