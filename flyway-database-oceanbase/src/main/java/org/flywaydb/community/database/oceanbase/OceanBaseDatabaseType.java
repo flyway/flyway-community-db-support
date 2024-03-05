@@ -19,6 +19,7 @@ import org.flywaydb.community.database.OceanBaseDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
@@ -31,7 +32,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public class OceanBaseDatabaseType extends BaseDatabaseType {
+public class OceanBaseDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
 
     private static final String MYSQL_JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
     private static final String MYSQL_LEGACY_JDBC_DRIVER = "com.mysql.jdbc.Driver";
