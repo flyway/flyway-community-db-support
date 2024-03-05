@@ -28,7 +28,7 @@
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.7.2</version>
+    <version>10.8.0</version>
     <name>${project.artifactId}</name>
 
     <modules>
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>flyway-core</artifactId>
-                <version>10.7.1</version>
+                <version>10.8.1</version>
                 <scope>provided</scope>
             </dependency>
         </dependencies>
