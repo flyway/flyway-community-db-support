@@ -79,6 +79,10 @@ public class OceanBaseDatabaseType extends BaseDatabaseType {
 
     @Override
     public boolean handlesDatabaseProductNameAndVersion(String databaseProductName, String databaseProductVersion, Connection connection) {
+        if (!databaseProductName.contains("MySQL")) {
+            return false;
+        }
+
         String versionComment;
         try {
             versionComment = OceanBaseJdbcUtils.getVersionComment(connection);
