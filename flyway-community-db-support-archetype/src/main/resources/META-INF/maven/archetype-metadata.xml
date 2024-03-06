@@ -5,7 +5,7 @@
 
   <requiredProperties>
     <requiredProperty key="parentVersion">
-      <defaultValue>10.7.2</defaultValue>
+      <defaultValue>10.8.0</defaultValue>
     </requiredProperty>
     <requiredProperty key="artifactId">
       <defaultValue>flyway-database-example</defaultValue>
