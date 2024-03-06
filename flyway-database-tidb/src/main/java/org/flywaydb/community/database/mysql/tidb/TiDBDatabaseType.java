@@ -17,6 +17,7 @@ package org.flywaydb.community.database.mysql.tidb;
 
 import org.flywaydb.community.database.TiDBDatabaseExtension;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.database.mysql.MySQLConnection;
 import org.flywaydb.database.mysql.MySQLDatabaseType;
@@ -25,7 +26,7 @@ import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 
 import java.sql.Connection;
 
-public class TiDBDatabaseType extends MySQLDatabaseType {
+public class TiDBDatabaseType extends MySQLDatabaseType implements CommunityDatabaseType {
     @Override
     public String getName() {
         return "TiDB";

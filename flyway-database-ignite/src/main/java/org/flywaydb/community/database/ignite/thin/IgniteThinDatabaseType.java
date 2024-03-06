@@ -18,6 +18,7 @@ package org.flywaydb.community.database.ignite.thin;
 import org.flywaydb.community.database.IgniteDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
@@ -36,7 +37,7 @@ import java.sql.Types;
  * For simple testing, use `docker run -d -p 10800:10800 apacheignite/ignite` to spin up the DB and then
  * `jdbc:ignite:thin://127.0.0.1` as the JDBC URL, no username or password
  * */
-public class IgniteThinDatabaseType extends BaseDatabaseType {
+public class IgniteThinDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
     public String getName() {
         return "Apache Ignite";
     }

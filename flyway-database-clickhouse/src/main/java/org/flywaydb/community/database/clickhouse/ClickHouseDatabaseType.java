@@ -19,6 +19,7 @@ import org.flywaydb.community.database.ClickHouseDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.core.internal.parser.Parser;
@@ -26,7 +27,7 @@ import org.flywaydb.core.internal.parser.ParsingContext;
 
 import java.sql.Connection;
 
-public class ClickHouseDatabaseType extends BaseDatabaseType {
+public class ClickHouseDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
     @Override
     public String getName() {
         return "ClickHouse";
