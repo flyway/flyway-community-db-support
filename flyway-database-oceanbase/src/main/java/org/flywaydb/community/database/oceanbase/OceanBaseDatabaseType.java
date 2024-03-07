@@ -59,7 +59,7 @@ public class OceanBaseDatabaseType extends MySQLDatabaseType implements Communit
 
     @Override
     public String getDriverClass(String url, ClassLoader classLoader) {
-        return !url.startsWith("jdbc:mysql:")?
+        return url.startsWith("jdbc:oceanbase:")?
             OB_JDBC_DRIVER :
             super.getDriverClass(url, classLoader);
     }
