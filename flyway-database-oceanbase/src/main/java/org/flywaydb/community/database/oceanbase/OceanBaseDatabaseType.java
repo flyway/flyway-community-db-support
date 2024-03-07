@@ -18,7 +18,6 @@ package org.flywaydb.community.database.oceanbase;
 import org.flywaydb.community.database.OceanBaseDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.internal.database.base.BaseDatabaseType;
 import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
@@ -26,16 +25,15 @@ import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.core.internal.parser.Parser;
 import org.flywaydb.core.internal.parser.ParsingContext;
 import org.flywaydb.core.internal.util.ClassUtils;
+import org.flywaydb.database.mysql.MySQLDatabaseType;
 import org.flywaydb.database.mysql.MySQLParser;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
 
-public class OceanBaseDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
+public class OceanBaseDatabaseType extends MySQLDatabaseType implements CommunityDatabaseType {
 
-    private static final String MYSQL_JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
-    private static final String MYSQL_LEGACY_JDBC_DRIVER = "com.mysql.jdbc.Driver";
     private static final String OB_JDBC_DRIVER = "com.oceanbase.jdbc.Driver";
     private static final String OB_LEGACY_JDBC_DRIVER = "com.alipay.oceanbase.jdbc.Driver";
 
@@ -61,21 +59,16 @@ public class OceanBaseDatabaseType extends BaseDatabaseType implements Community
 
     @Override
     public String getDriverClass(String url, ClassLoader classLoader) {
-        if (url.startsWith("jdbc:mysql:")) {
-            return MYSQL_JDBC_DRIVER;
-        }
-        return OB_JDBC_DRIVER;
+        return url.startsWith("jdbc:oceanbase:")?
+            OB_JDBC_DRIVER :
+            super.getDriverClass(url, classLoader);
     }
 
     @Override
     public String getBackupDriverClass(String url, ClassLoader classLoader) {
-        if (url.startsWith("jdbc:mysql:") && ClassUtils.isPresent(MYSQL_LEGACY_JDBC_DRIVER, classLoader)) {
-            return MYSQL_LEGACY_JDBC_DRIVER;
-        }
-        if (url.startsWith("jdbc:oceanbase:") && ClassUtils.isPresent(OB_LEGACY_JDBC_DRIVER, classLoader)) {
-            return OB_LEGACY_JDBC_DRIVER;
-        }
-        return null;
+        return (url.startsWith("jdbc:oceanbase:") && ClassUtils.isPresent(OB_LEGACY_JDBC_DRIVER, classLoader)?
+            OB_LEGACY_JDBC_DRIVER :
+            super.getBackupDriverClass(url, classLoader));
     }
 
     @Override
@@ -96,11 +89,6 @@ public class OceanBaseDatabaseType extends BaseDatabaseType implements Community
     @Override
     public Database createDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
         return new OceanBaseDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
-    }
-
-    @Override
-    public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
-        return new MySQLParser(configuration, parsingContext);
     }
 
     @Override
