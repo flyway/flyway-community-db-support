@@ -28,7 +28,7 @@
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.8.0</version>
+    <version>10.8.1</version>
     <name>${project.artifactId}</name>
 
     <modules>
@@ -39,12 +39,16 @@
         <module>flyway-database-oceanbase</module>
     </modules>
 
+    <properties>
+        <version.flyway>10.9.0</version.flyway>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>flyway-core</artifactId>
-                <version>10.9.0</version>
+                <version>${version.flyway}</version>
                 <scope>provided</scope>
             </dependency>
         </dependencies>
