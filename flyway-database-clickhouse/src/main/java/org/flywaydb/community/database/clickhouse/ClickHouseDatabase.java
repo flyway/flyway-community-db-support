@@ -101,6 +101,15 @@ public class ClickHouseDatabase extends Database<ClickHouseConnection> {
     }
 
     @Override
+    public void close() {
+        if (systemConnection != null) {
+            systemConnection.close();
+        }
+
+        super.close();
+    }
+
+    @Override
     public String getRawCreateScript(Table table, boolean baseline) {
         String clusterName = getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
