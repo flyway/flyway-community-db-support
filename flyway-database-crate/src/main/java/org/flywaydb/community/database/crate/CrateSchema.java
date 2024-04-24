@@ -22,9 +22,9 @@ public class CrateSchema extends Schema<CrateDatabase, CrateTable> {
     protected boolean doEmpty() throws SQLException {
         return jdbcTemplate.queryForInt("""
                         SELECT COUNT() FROM (
-                        SELECT table_name FROM information_schema.tables WHERE table_schema = ? UNION
+                        SELECT table_name FROM information_schema.tables WHERE table_type='BASE TABLE' AND table_schema = ? UNION
                         SELECT table_name FROM information_schema.views WHERE table_schema = ? UNION
-                        SELECT rountine_name FROM information_schema.routines WHERE routine_schema = ?
+                        SELECT routine_name FROM information_schema.routines WHERE routine_schema = ?
                         ) objs""",
                 name, name, name) == 0;
     }
@@ -43,7 +43,33 @@ public class CrateSchema extends Schema<CrateDatabase, CrateTable> {
 
     @Override
     protected void doClean() throws SQLException {
+        // drop views
+        List<String> dropViewStatements = jdbcTemplate.queryForStringList(
+                "SELECT table_name FROM information_schema.views WHERE table_schema = ?", name)
+                .stream().map(viewName -> "DROP VIEW IF EXISTS "+database.quote(name, viewName)).toList();
+        for (String stmt : dropViewStatements) {
+            jdbcTemplate.execute(stmt);
+        }
 
+        // drop tables
+        List<String> dropTableStatements = jdbcTemplate.queryForStringList(
+                "SELECT table_name FROM information_schema.tables WHERE table_type='BASE TABLE' AND table_schema = ?", name)
+                .stream().map(tableName -> "DROP TABLE IF EXISTS "+database.quote(name, tableName)).toList();
+        for (String stmt : dropTableStatements) {
+            jdbcTemplate.execute(stmt);
+        }
+
+        // drop functions
+        List<String> dropFunctionStatements = jdbcTemplate.queryForList(
+                "SELECT routine_name, specific_name FROM information_schema.routines WHERE routine_schema = ?", name)
+                .stream().map(result -> {
+                    String fnName = result.get("routine_name");
+                    String fnArgs = result.get("specific_name").substring(fnName.length());
+                    return "DROP FUNCTION IF EXISTS " + database.quote(name, fnName) + fnArgs;
+                }).toList();
+        for (String stmt : dropFunctionStatements) {
+            jdbcTemplate.execute(stmt);
+        }
     }
 
     @Override
