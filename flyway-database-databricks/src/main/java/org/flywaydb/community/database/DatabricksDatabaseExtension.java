@@ -30,7 +30,7 @@ public class DatabricksDatabaseExtension implements PluginMetadata {
     public static String readVersion() {
         try {
             return FileUtils.copyToString(
-                    IgniteDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/databricks/version.txt"),
+                    DatabricksDatabaseExtension.class.getClassLoader().getResourceAsStream("org/flywaydb/community/database/databricks/version.txt"),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new FlywayException("Unable to read extension version: " + e.getMessage(), e);

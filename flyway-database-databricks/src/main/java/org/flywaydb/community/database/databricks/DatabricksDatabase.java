@@ -26,7 +26,7 @@ public class DatabricksDatabase extends Database<DatabricksConnection> {
     }
 
     @Override
-    public void ensureSupported() {
+    public void ensureSupported(Configuration configuration) {
         // Always latest Databricks version.
     }
 
@@ -34,11 +34,6 @@ public class DatabricksDatabase extends Database<DatabricksConnection> {
     public boolean supportsDdlTransactions() {
         // Databricks is non-transactional
         return false;
-    }
-
-    @Override
-    public boolean supportsChangingCurrentSchema() {
-        return true;
     }
 
     @Override

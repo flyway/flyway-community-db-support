@@ -19,7 +19,7 @@ public class DatabricksTable extends Table<DatabricksDatabase, DatabricksSchema>
      */
     public DatabricksTable(JdbcTemplate jdbcTemplate, DatabricksDatabase database, DatabricksSchema schema, String name) {
         super(jdbcTemplate, database, schema, name);
-        this.insertRowLock = new InsertRowLock(jdbcTemplate, 10);
+        this.insertRowLock = new InsertRowLock(jdbcTemplate);
     }
 
     @Override
