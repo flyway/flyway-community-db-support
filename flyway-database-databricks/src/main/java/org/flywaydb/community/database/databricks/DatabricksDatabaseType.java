@@ -3,6 +3,7 @@ package org.flywaydb.community.database.databricks;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
@@ -14,7 +15,7 @@ import java.sql.Connection;
 import java.sql.Types;
 import java.util.Properties;
 
-public class DatabricksDatabaseType extends BaseDatabaseType {
+public class DatabricksDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
     private static final String DATABRICKS_JDBC_DRIVER = "com.databricks.client.jdbc.Driver";
     private static final String DATABRICKS_JDBC41_DRIVER = "com.databricks.client.jdbc41.Driver";
 
