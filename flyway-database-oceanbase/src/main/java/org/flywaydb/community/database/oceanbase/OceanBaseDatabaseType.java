@@ -73,7 +73,7 @@ public class OceanBaseDatabaseType extends MySQLDatabaseType implements Communit
 
     @Override
     public boolean handlesDatabaseProductNameAndVersion(String databaseProductName, String databaseProductVersion, Connection connection) {
-        if (!databaseProductName.contains("MySQL")) {
+        if (!databaseProductName.contains("MySQL") && !databaseProductName.contains("OceanBase")) {
             return false;
         }
 
