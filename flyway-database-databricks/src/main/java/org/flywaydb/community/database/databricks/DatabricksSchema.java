@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable> {
     /**
@@ -30,10 +31,19 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
         }
         return tableNames;
     }
+    
+    private List<String> fetchAllSchemas() throws SQLException {
+        List<Map<String, String>> schemaInfos = jdbcTemplate.queryForList("show schemas");
+        List<String> schemaNames = new ArrayList<>();
+        for (Map<String, String> schemaInfo : schemaInfos) {
+            schemaNames.add(schemaInfo.get("databaseName"));
+        }
+        return schemaNames;
+    }
 
     @Override
     protected boolean doExists() throws SQLException {
-        return fetchAllObjs("table").size() > 0;
+        return fetchAllSchemas().stream().anyMatch(schema -> Objects.equals(schema, name));
     }
 
     @Override
