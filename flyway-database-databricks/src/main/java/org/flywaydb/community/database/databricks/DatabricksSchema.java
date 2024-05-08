@@ -63,19 +63,18 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected void doClean() throws SQLException {
-        for (String statement : generateDropStatements("TABLE", "tableName")) {
+        for (String statement : generateDropStatements("TABLE", fetchAllObjs("TABLE", "tableName"))) {
             jdbcTemplate.execute(statement);
         }
-        for (String statement : generateDropStatements("VIEW", "viewName")) {
+        for (String statement : generateDropStatements("VIEW", fetchAllObjs("VIEW", "viewName"))) {
             jdbcTemplate.execute(statement);
         }
-        for (String statement : generateDropStatements("FUNCTION", "function")) {
+        for (String statement : generateDropStatements("FUNCTION",fetchAllObjs("USER FUNCTION", "function"))) {
             jdbcTemplate.execute(statement);
         }
     }
 
-    private List<String> generateDropStatements(String objType, String columnName) throws SQLException {
-        List<String> names = fetchAllObjs(objType, columnName);
+    private List<String> generateDropStatements(String objType, List<String> names) throws SQLException {
         List<String> statements = new ArrayList<>();
         for (String domainName : names) {
             statements.add("drop " + objType + " if exists " + database.quote(name, domainName) + ";");
