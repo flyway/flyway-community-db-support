@@ -37,6 +37,7 @@
         <module>flyway-database-yugabytedb</module>
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
+        <module>flyway-database-databricks</module>
     </modules>
 
     <properties>
