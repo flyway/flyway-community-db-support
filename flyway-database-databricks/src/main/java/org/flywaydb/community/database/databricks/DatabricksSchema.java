@@ -40,6 +40,12 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
         }
         return schemaNames;
     }
+    
+    private List<String> fetchAllTables() throws SQLException {
+        var tables = fetchAllObjs("table", "tableName");
+        var views = fetchAllObjs("view", "viewName");
+        return tables.stream().filter(t -> !views.contains(t)).toList();
+    }
 
     @Override
     protected boolean doExists() throws SQLException {
@@ -48,7 +54,7 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected boolean doEmpty() throws SQLException {
-        return fetchAllObjs("table", "tableName").size() == 0;
+        return fetchAllTables().size() == 0;
     }
 
     @Override
@@ -63,7 +69,7 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected void doClean() throws SQLException {
-        for (String statement : generateDropStatements("TABLE", fetchAllObjs("TABLE", "tableName"))) {
+        for (String statement : generateDropStatements("TABLE", fetchAllTables())) {
             jdbcTemplate.execute(statement);
         }
         for (String statement : generateDropStatements("VIEW", fetchAllObjs("VIEW", "viewName"))) {
@@ -85,7 +91,7 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected DatabricksTable[] doAllTables() throws SQLException {
-        List<String> tableNames = fetchAllObjs("TABLE", "tableName");
+        List<String> tableNames = fetchAllTables();
         DatabricksTable[] tables = new DatabricksTable[tableNames.size()];
         for (int i = 0; i < tableNames.size(); i++) {
             tables[i] = new DatabricksTable(jdbcTemplate, database, this, tableNames.get(i));
