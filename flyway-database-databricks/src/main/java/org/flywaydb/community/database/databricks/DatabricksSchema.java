@@ -21,13 +21,13 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
         super(jdbcTemplate, database, name);
     }
 
-    private List<String> fetchAllObjs(String obj) throws SQLException  {
+    private List<String> fetchAllObjs(String obj, String column) throws SQLException  {
         List<Map<String, String>> tableInfos = jdbcTemplate.queryForList(
                 "show " + obj + "s from " + database.quote(name)
         );
         List<String> tableNames = new ArrayList<String>();
         for (Map<String, String> tableInfo : tableInfos) {
-            tableNames.add(tableInfo.get("tableName"));
+            tableNames.add(tableInfo.get(column));
         }
         return tableNames;
     }
@@ -48,7 +48,7 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected boolean doEmpty() throws SQLException {
-        return fetchAllObjs("table").size() == 0;
+        return fetchAllObjs("table", "tableName").size() == 0;
     }
 
     @Override
@@ -63,19 +63,19 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected void doClean() throws SQLException {
-        for (String statement : generateDropStatements("TABLE")) {
+        for (String statement : generateDropStatements("TABLE", "tableName")) {
             jdbcTemplate.execute(statement);
         }
-        for (String statement : generateDropStatements("VIEW")) {
+        for (String statement : generateDropStatements("VIEW", "viewName")) {
             jdbcTemplate.execute(statement);
         }
-        for (String statement : generateDropStatements("FUNCTION")) {
+        for (String statement : generateDropStatements("FUNCTION", "function")) {
             jdbcTemplate.execute(statement);
         }
     }
 
-    private List<String> generateDropStatements(String objType) throws SQLException {
-        List<String> names = fetchAllObjs(objType);
+    private List<String> generateDropStatements(String objType, String columnName) throws SQLException {
+        List<String> names = fetchAllObjs(objType, columnName);
         List<String> statements = new ArrayList<>();
         for (String domainName : names) {
             statements.add("drop " + objType + " if exists " + database.quote(name, domainName) + ";");
@@ -86,7 +86,7 @@ public class DatabricksSchema extends Schema<DatabricksDatabase, DatabricksTable
 
     @Override
     protected DatabricksTable[] doAllTables() throws SQLException {
-        List<String> tableNames = fetchAllObjs("TABLE");
+        List<String> tableNames = fetchAllObjs("TABLE", "tableName");
         DatabricksTable[] tables = new DatabricksTable[tableNames.size()];
         for (int i = 0; i < tableNames.size(); i++) {
             tables[i] = new DatabricksTable(jdbcTemplate, database, this, tableNames.get(i));
