@@ -16,7 +16,10 @@
 package org.flywaydb.community.database.postgresql.yugabytedb;
 
 import org.flywaydb.core.internal.database.base.Schema;
+import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.database.postgresql.PostgreSQLConnection;
+
+import java.util.concurrent.Callable;
 
 public class YugabyteDBConnection extends PostgreSQLConnection {
 
@@ -27,5 +30,10 @@ public class YugabyteDBConnection extends PostgreSQLConnection {
     @Override
     public Schema getSchema(String name) {
         return new YugabyteDBSchema(jdbcTemplate, (YugabyteDBDatabase) database, name);
+    }
+
+    @Override
+    public <T> T lock(Table table, Callable<T> callable) {
+        return new YugabyteDBExecutionTemplate(jdbcTemplate, table.toString()).execute(callable);
     }
 }
