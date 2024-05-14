@@ -43,7 +43,7 @@ jobs:
           git commit -am "Bump Flyway Community DB Support to $NEW_VERSION"
       - name: Tag and Push
         run: |
-          git tag -a $NEW_VERSION -m "Flyway Community DB Support $NEW_VERSION"
+          git tag -a -m "Flyway Community DB Support $NEW_VERSION" $NEW_VERSION
           git push origin main --tags
         
 
