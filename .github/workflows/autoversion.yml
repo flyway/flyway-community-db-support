@@ -38,6 +38,8 @@ jobs:
             NEW_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | awk -F'[.-]' '{print $1"."$2"."$3+1}')
           fi
           mvn versions:set -DnewVersion=$NEW_VERSION
+          git config user.email "github-buildmonkey@red-gate.com"
+          git config user.name "rg-buildmonkey"
           git commit -am "Bump Flyway Community DB Support to $NEW_VERSION"
       - name: Tag and Push
         run: |
