@@ -41,9 +41,8 @@ jobs:
           git config user.email "github-buildmonkey@red-gate.com"
           git config user.name "rg-buildmonkey"
           git commit -am "Bump Flyway Community DB Support to $NEW_VERSION"
-      - name: Tag and Push
-        run: |
           git tag -a -m "Flyway Community DB Support $NEW_VERSION" $NEW_VERSION
           git push origin main --tags
+          
         
 
