@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
-        <version>10.9.0</version>
+        <version>10.12.0</version>
         <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -38,6 +38,7 @@
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
         <module>flyway-database-databricks</module>
+        <module>flyway-community-db-support-archetype</module>
     </modules>
 
     <properties>
