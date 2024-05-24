@@ -91,4 +91,10 @@ public class DB2ZDatabaseType extends BaseDatabaseType {
         return (connection, undo, batch, outputQueryResults) -> new DefaultSqlScriptExecutor(new DB2ZJdbcTemplate(connection, thisRef),
             callbackExecutor, undo, finalSupportsBatch && batch, outputQueryResults, statementInterceptor);
     }
+
+    @Override
+    public int getPriority() {
+        // DB2/zOS needs to be checked in advance of DB2
+        return 1;
+    }
 }
