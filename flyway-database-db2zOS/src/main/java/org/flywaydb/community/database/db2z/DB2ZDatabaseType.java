@@ -18,6 +18,7 @@ package org.flywaydb.community.database.db2z;
 import java.sql.Connection;
 import java.sql.Types;
 import java.util.Properties;
+import org.flywaydb.community.database.DB2ZDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.callback.CallbackExecutor;
@@ -96,5 +97,10 @@ public class DB2ZDatabaseType extends BaseDatabaseType {
     public int getPriority() {
         // DB2/zOS needs to be checked in advance of DB2
         return 1;
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return DB2ZDatabaseExtension.readVersion();
     }
 }
