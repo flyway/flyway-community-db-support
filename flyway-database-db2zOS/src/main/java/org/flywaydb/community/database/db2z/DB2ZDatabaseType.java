@@ -24,6 +24,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.callback.CallbackExecutor;
 import org.flywaydb.core.internal.database.DatabaseType;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
+import org.flywaydb.core.internal.database.base.CommunityDatabaseType;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
@@ -32,7 +33,7 @@ import org.flywaydb.core.internal.parser.ParsingContext;
 import org.flywaydb.core.internal.sqlscript.DefaultSqlScriptExecutor;
 import org.flywaydb.core.internal.sqlscript.SqlScriptExecutorFactory;
 
-public class DB2ZDatabaseType extends BaseDatabaseType {
+public class DB2ZDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
 
     public String getName() {
         return "DB2 for z/OS";
