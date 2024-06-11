@@ -17,34 +17,28 @@
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-community-db-support</artifactId>
-        <version>10.14.0</version>
-    </parent>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-community-db-support</artifactId>
+    <version>10.14.0</version>
+  </parent>
 
-    <artifactId>flyway-database-oceanbase</artifactId>
+    <artifactId>flyway-database-db2zOS</artifactId>
     <name>${project.artifactId}</name>
 
     <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>flyway-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>flyway-mysql</artifactId>
-            <version>${version.flyway}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.flywaydb</groupId>
-                    <artifactId>flyway-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>flyway-core</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
 
     <build>
