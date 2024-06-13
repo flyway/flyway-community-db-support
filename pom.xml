@@ -21,14 +21,14 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
-        <version>10.12.0</version>
+        <version>10.15.0</version>
         <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.14.0</version>
+    <version>10.14.1</version>
     <name>${project.artifactId}</name>
 
     <modules>
@@ -38,12 +38,12 @@
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
         <module>flyway-database-databricks</module>
-        <module>flyway-community-db-support-archetype</module>
         <module>flyway-database-db2zOS</module>
+        <module>flyway-community-db-support-archetype</module>
     </modules>
 
     <properties>
-        <version.flyway>10.14.0</version.flyway>
+        <version.flyway>10.15.0</version.flyway>
     </properties>
 
     <dependencyManagement>
