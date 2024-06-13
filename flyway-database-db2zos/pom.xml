@@ -23,10 +23,10 @@
   <parent>
     <groupId>org.flywaydb</groupId>
     <artifactId>flyway-community-db-support</artifactId>
-    <version>10.14.0</version>
+    <version>10.14.1</version>
   </parent>
 
-    <artifactId>flyway-database-db2zOS</artifactId>
+    <artifactId>flyway-database-db2zos</artifactId>
     <name>${project.artifactId}</name>
 
     <dependencies>
