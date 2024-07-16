@@ -65,7 +65,7 @@ public class DB2ZCallProcedureParsedStatement extends ParsedSqlStatement {
 			if(resultList.size() > 0) {
 				Result result = resultList.get(0);
 				if(result != null) {
-					List<List<String>> resultData = result.getData();
+					List<List<String>> resultData = result.data();
 					if(resultData != null && resultData.size() > 0) {
 						List<String> lastResultRow = resultData.get(resultData.size()-1);
 						if(lastResultRow != null && lastResultRow.size() > 0 ) {
