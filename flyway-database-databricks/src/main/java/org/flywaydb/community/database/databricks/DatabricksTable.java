@@ -33,8 +33,7 @@ public class DatabricksTable extends Table<DatabricksDatabase, DatabricksSchema>
             return false;
         }
         List<Map<String, String>> tables = jdbcTemplate.queryForList(
-                "show tables in " + database.quote(schema.getName()) + " like ?",
-                name
+                "show tables in " + database.quote(schema.getName()) + " like '" + name + "';"
         );
         return tables.stream().anyMatch(table -> table.get("tableName").equals(name));
     }
