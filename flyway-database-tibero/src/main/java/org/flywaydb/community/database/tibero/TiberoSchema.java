@@ -1,6 +1,8 @@
 package org.flywaydb.community.database.tibero;
 
 
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.*;
+
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.internal.database.base.Schema;
 import org.flywaydb.core.internal.database.base.Table;
@@ -12,13 +14,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.*;
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.FUNCTION;
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.INDEX;
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SEQUENCE;
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.TABLE;
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.VIEW;
 
 public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
 
@@ -86,6 +81,13 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
             PACKAGE,
             PACKAGE_BODY,
             LIBRARY,
+            TYPE,
+            DIRECTORY,
+            SYNONYM,
+
+            // Object types with sensitive information (passwords), skip intentionally, print warning if found.
+            DATABASE_LINK,
+            CREDENTIAL
             );
 
         for (ObjectType objectType : objectTypesToClean) {
@@ -377,7 +379,62 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
         PACKAGE("PACKAGE"),
         PACKAGE_BODY("PACKAGE BODY"),
         LIBRARY("LIBRARY"),
+        TYPE("TYPE", "FORCE"),
+        DIRECTORY("DIRECTORY"),
+        SYNONYM("SYNONYM", "FORCE"),
+        DATABASE_LINK("DATABASE LINK") {
+            @Override
+            public void dropObjects(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema) {
+                super.warnUnsupported(database.quote(schema.getName()));
+            }
 
+            @Override
+            public List<String> getObjectNames(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema) throws SQLException {
+                return jdbcTemplate.queryForStringList(
+                    "SELECT DB_LINK FROM " + database.dbaOrAll("DB_LINKS") + " WHERE OWNER = ?",
+                    schema.getName()
+                );
+            }
+
+            @Override
+            public String generateDropStatement(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema, String objectName) {
+                return "DROP " + this.getName() + " "
+                    + objectName;
+            }
+        },
+        CREDENTIAL("CREDENTIAL") {
+            @Override
+            public void dropObjects(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema) {
+                super.warnUnsupported(database.quote(schema.getName()));
+            }
+
+            @Override
+            public String generateDropStatement(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema, String objectName) {
+                return "BEGIN DBMS_SCHEDULER.DROP_CREDENTIAL('" + database.quote(schema.getName(),
+                    objectName) + "', FORCE => TRUE); END;";
+            }
+        },
+        CONTEXT("CONTEXT") {
+            @Override
+            public List<String> getObjectNames(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema) throws SQLException {
+                return jdbcTemplate.queryForStringList(
+                    "SELECT NAMESPACE FROM " + database.dbaOrAll("CONTEXT") + " WHERE SCHEMA = ?",
+                    schema.getName()
+                );
+            }
+
+            @Override
+            public String generateDropStatement(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema, String objectName) {
+                return "DROP " + this.getName() + " " + database.quote(objectName); // no owner
+            }
+        },
         ;
 
         private final String name;
