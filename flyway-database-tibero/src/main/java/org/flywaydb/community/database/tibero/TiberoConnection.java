@@ -12,11 +12,23 @@ public class TiberoConnection extends Connection<TiberoDatabase> {
 
     @Override
     protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
-        return "";
+        return jdbcTemplate.queryForString("SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL");
     }
 
     @Override
-    public Schema getSchema(String s) {
-        return null;
+    public void doChangeCurrentSchemaOrSearchPathTo(String schema) throws SQLException {
+        jdbcTemplate.execute("ALTER SESSION SET CURRENT_SCHEMA=" + database.quote(schema));
+    }
+
+    @Override
+    public Schema doGetCurrentSchema() throws SQLException {
+        String currentSchema = getCurrentSchemaNameOrSearchPath();
+
+        return getSchema(currentSchema);
+    }
+
+    @Override
+    public Schema getSchema(String name) {
+        return new TiberoSchema(jdbcTemplate, database, name);
     }
 }
