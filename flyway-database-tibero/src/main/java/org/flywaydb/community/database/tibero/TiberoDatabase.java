@@ -10,7 +10,6 @@ import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.core.internal.util.StringUtils;
 
-
 public class TiberoDatabase extends Database<TiberoConnection> {
 
     public TiberoDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory,
@@ -94,5 +93,19 @@ public class TiberoDatabase extends Database<TiberoConnection> {
     boolean isPrivOrRoleGranted(String name) throws SQLException {
         return queryReturnsRows("SELECT 1 FROM SESSION_PRIVS WHERE PRIVILEGE = ? UNION ALL " +
             "SELECT 1 FROM SESSION_ROLES WHERE ROLE = ?", name, name);
+    }
+
+    boolean queryReturnsRows(String query, String... params) throws SQLException {
+        return getMainConnection().getJdbcTemplate()
+            .queryForBoolean("SELECT CASE WHEN EXISTS(" + query + ") THEN 1 ELSE 0 END FROM DUAL", params);
+    }
+
+    private boolean isDataDictViewAccessible(String owner, String name) throws SQLException {
+        return queryReturnsRows("SELECT * FROM DBA_TAB_PRIVS WHERE OWNER = ? AND TABLE_NAME = ?" +
+            " AND PRIVILEGE = 'SELECT'", owner, name);
+    }
+
+    boolean isDataDictViewAccessible(String name) throws SQLException {
+        return isDataDictViewAccessible("SYS", name);
     }
 }
