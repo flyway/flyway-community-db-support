@@ -26,6 +26,5 @@ public class TiberoTable extends Table<TiberoDatabase, TiberoSchema> {
     protected void doLock() throws SQLException {
         jdbcTemplate.execute("LOCK TABLE " + this + " IN EXCLUSIVE MODE");
     }
-}
 
 }

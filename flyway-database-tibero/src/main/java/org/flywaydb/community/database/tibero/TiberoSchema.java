@@ -82,6 +82,10 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
             INDEX,
             SEQUENCE,
             FUNCTION,
+            PROCEDURE,
+            PACKAGE,
+            PACKAGE_BODY,
+            LIBRARY,
             );
 
         for (ObjectType objectType : objectTypesToClean) {
@@ -369,6 +373,10 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
         },
         SEQUENCE("SEQUENCE"),
         FUNCTION("FUNCTION"),
+        PROCEDURE("PROCEDURE"),
+        PACKAGE("PACKAGE"),
+        PACKAGE_BODY("PACKAGE BODY"),
+        LIBRARY("LIBRARY"),
 
         ;
 
