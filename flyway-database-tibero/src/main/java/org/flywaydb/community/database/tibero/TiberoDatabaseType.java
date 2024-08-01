@@ -1,6 +1,7 @@
 package org.flywaydb.community.database.tibero;
 
 import java.sql.Connection;
+import java.sql.Types;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -15,38 +16,41 @@ public class TiberoDatabaseType extends BaseDatabaseType implements CommunityDat
 
     @Override
     public String getName() {
-        return "";
+        return "Tibero";
     }
 
     @Override
     public int getNullType() {
-        return 0;
+        return Types.VARCHAR;
     }
 
     @Override
-    public boolean handlesJDBCUrl(String s) {
-        return false;
+    public boolean handlesJDBCUrl(String url) {
+        return url.startsWith("jdbc:tibero");
     }
 
     @Override
-    public String getDriverClass(String s, ClassLoader classLoader) {
-        return "";
+    public String getDriverClass(String url, ClassLoader classLoader) {
+        return "com.tmax.tibero.jdbc.TbDriver";
     }
 
     @Override
-    public boolean handlesDatabaseProductNameAndVersion(String s, String s1, Connection connection) {
-        return false;
+    public boolean handlesDatabaseProductNameAndVersion(String databaseProductName,
+        String databaseProductVersion, Connection connection) {
+        return true;
     }
 
     @Override
-    public Database createDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory,
-        StatementInterceptor statementInterceptor) {
-        return null;
+    public Database createDatabase(Configuration configuration,
+        JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
+        TiberoDatabase.enableTiberoTNSNameSupport();
+
+        return new TiberoDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider,
         ParsingContext parsingContext) {
-        return null;
+        return new TiberoParser(configuration, parsingContext, 3);
     }
 }
