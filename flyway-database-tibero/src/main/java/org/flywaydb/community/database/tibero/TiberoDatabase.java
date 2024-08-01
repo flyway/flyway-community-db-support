@@ -132,6 +132,43 @@ public class TiberoDatabase extends Database<TiberoConnection> {
         return result;
     }
 
+    boolean isFlashbackDataArchiveAvailable(String schemaName) throws SQLException {
+        String paramQuery = "SELECT COUNT(*) FROM V$PARAMETERS WHERE NAME LIKE '%FLASHBACK%' AND VALUE IS NOT NULL AND (LENGTH(TRIM(VALUE)) > 0 OR VALUE != '0')";
+        int paramCount = getMainConnection().getJdbcTemplate().queryForInt(paramQuery);
+
+        if (paramCount == 0) {
+            return false;
+        }
+
+        String destQuery = "SELECT VALUE FROM V$PARAMETERS WHERE NAME = 'FLASHBACK_LOG_ARCHIVE_DEST'";
+        String flashbackDest = getMainConnection().getJdbcTemplate().queryForString(destQuery);
+
+        if (flashbackDest == null || flashbackDest.trim().isEmpty()) {
+            return false;
+        }
+
+        String logModeQuery = "SELECT LOG_MODE FROM V$DATABASE";
+        String logMode = getMainConnection().getJdbcTemplate().queryForString(logModeQuery);
+
+        if (!"ARCHIVELOG".equalsIgnoreCase(logMode)) {
+            return false;
+        }
+
+        String tablespaceQuery = "SELECT COUNT(*) FROM DBA_USERS u JOIN V$TABLESPACE t ON u.DEFAULT_TABLESPACE = t.NAME WHERE u.USERNAME = ? AND t.FLASHBACK_ON = 'YES'";
+        int flashbackOnCount = getMainConnection().getJdbcTemplate()
+                .queryForInt(tablespaceQuery, schemaName.toUpperCase());
+
+        if (flashbackOnCount == 0) {
+            return false;
+        }
+
+        String privilegeQuery = "SELECT COUNT(*) FROM DBA_SYS_PRIVS WHERE GRANTEE = ? AND (PRIVILEGE = 'FLASHBACK ANY TABLE' OR PRIVILEGE = 'FLASHBACK OBJECT')";
+        int privilegeCount = getMainConnection().getJdbcTemplate()
+                .queryForInt(privilegeQuery, schemaName.toUpperCase());
+
+        return privilegeCount != 0;
+    }
+
     String dbaOrAll(String baseName) throws SQLException {
         return isPrivOrRoleGranted("SELECT ANY DICTIONARY") || isDataDictViewAccessible("DBA_" + baseName)
             ? "DBA_" + baseName
