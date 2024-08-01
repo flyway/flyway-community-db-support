@@ -16,7 +16,7 @@ public class TiberoDatabase extends Database<TiberoConnection> {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
-    public static void enableTiberoTNSNameSupport() {
+    public static void enableTiberoTBDSNSupport() {
         String tiberoAdminEnvVar = System.getenv("TIBERO_ADMIN");
         String tiberoAdminSysProp = System.getProperty("TIBERO_NET_ADMIN");
         if (StringUtils.hasLength(tiberoAdminEnvVar) && tiberoAdminSysProp == null) {
@@ -26,12 +26,19 @@ public class TiberoDatabase extends Database<TiberoConnection> {
 
     @Override
     protected TiberoConnection doGetConnection(Connection connection) {
-        return null;
+        return new TiberoConnection(this, connection);
+    }
+
+    @Override
+    protected String doGetCurrentUser() throws SQLException {
+        return getMainConnection().getJdbcTemplate().queryForString("SELECT USER FROM DUAL");
     }
 
     @Override
     public void ensureSupported(Configuration configuration) {
-
+        ensureDatabaseIsRecentEnough("7.0");
+        ensureDatabaseNotOlderThanOtherwiseRecommendUpgradeToFlywayEdition("7.0", Tier.PREMIUM, configuration);
+        recommendFlywayUpgradeIfNecessaryForMajorVersion("21.3");
     }
 
     @Override
@@ -41,12 +48,12 @@ public class TiberoDatabase extends Database<TiberoConnection> {
 
     @Override
     public String getBooleanTrue() {
-        return "";
+        return "1";
     }
 
     @Override
     public String getBooleanFalse() {
-        return "";
+        return "0";
     }
 
     @Override
