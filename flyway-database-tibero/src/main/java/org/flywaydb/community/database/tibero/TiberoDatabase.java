@@ -2,6 +2,10 @@ package org.flywaydb.community.database.tibero;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.extensibility.Tier;
 import org.flywaydb.core.internal.database.base.Database;
@@ -107,5 +111,34 @@ public class TiberoDatabase extends Database<TiberoConnection> {
 
     boolean isDataDictViewAccessible(String name) throws SQLException {
         return isDataDictViewAccessible("SYS", name);
+    }
+
+    Set<String> getSystemSchemas() throws SQLException {
+
+        Set<String> result = new HashSet<>(Arrays.asList(
+            "SYS", "SYSTEM",
+            "SYSCAT",
+            "SYSMAN",
+            "SYSGIS",
+            "OUTLN",
+            "TIBERO",
+            "TIBERO1"
+        ));
+
+        result.addAll(getMainConnection().getJdbcTemplate().queryForStringList(
+            "SELECT USERNAME FROM DBA_USERS WHERE USERNAME LIKE 'SYS%'"
+        ));
+
+        return result;
+    }
+
+    String dbaOrAll(String baseName) throws SQLException {
+        return isPrivOrRoleGranted("SELECT ANY DICTIONARY") || isDataDictViewAccessible("DBA_" + baseName)
+            ? "DBA_" + baseName
+            : "ALL_" + baseName;
+    }
+
+    boolean isLocatorAvailable() throws SQLException {
+        return isDataDictViewAccessible("SYSGIS", "ALL_GEOMETRY_COLUMNS");
     }
 }
