@@ -1,7 +1,9 @@
 package org.flywaydb.community.database.tibero;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.extensibility.Tier;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
@@ -16,7 +18,7 @@ public class TiberoDatabase extends Database<TiberoConnection> {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
-    public static void enableTiberoTBDSNSupport() {
+    public static void enableTiberoTNSNameSupport() {
         String tiberoAdminEnvVar = System.getenv("TIBERO_ADMIN");
         String tiberoAdminSysProp = System.getProperty("TIBERO_NET_ADMIN");
         if (StringUtils.hasLength(tiberoAdminEnvVar) && tiberoAdminSysProp == null) {
@@ -62,7 +64,35 @@ public class TiberoDatabase extends Database<TiberoConnection> {
     }
 
     @Override
-    public String getRawCreateScript(Table table, boolean b) {
-        return "";
+    public String getRawCreateScript(Table table, boolean baseline) {
+        String tablespace = configuration.getTablespace() == null
+            ? ""
+            : " TABLESPACE \"" + configuration.getTablespace() + "\"";
+
+        return "CREATE TABLE " + table + " (\n" +
+            "    \"installed_rank\" NUMBER NOT NULL,\n" +
+            "    \"version\" VARCHAR2(50),\n" +
+            "    \"description\" VARCHAR2(200) NOT NULL,\n" +
+            "    \"type\" VARCHAR2(20) NOT NULL,\n" +
+            "    \"script\" VARCHAR2(1000) NOT NULL,\n" +
+            "    \"checksum\" NUMBER,\n" +
+            "    \"installed_by\" VARCHAR2(100) NOT NULL,\n" +
+            "    \"installed_on\" TIMESTAMP DEFAULT SYSDATE NOT NULL,\n" +
+            "    \"execution_time\" NUMBER NOT NULL,\n" +
+            "    \"success\" NUMBER(1) NOT NULL,\n" +
+            "    CONSTRAINT \"" + table.getName() + "_pk\" PRIMARY KEY (\"installed_rank\")\n" +
+            ")" + tablespace + ";\n" +
+            (baseline ? getBaselineStatement(table) + ";\n" : "") +
+            "CREATE INDEX \"" + table.getSchema().getName() + "\".\"" + table.getName() + "_s_idx\" ON " + table
+            + " (\"success\");\n";
+    }
+
+    boolean isXmlDbAvailable() throws SQLException {
+        return isDataDictViewAccessible("ALL_XML_TABLES");
+    }
+
+    boolean isPrivOrRoleGranted(String name) throws SQLException {
+        return queryReturnsRows("SELECT 1 FROM SESSION_PRIVS WHERE PRIVILEGE = ? UNION ALL " +
+            "SELECT 1 FROM SESSION_ROLES WHERE ROLE = ?", name, name);
     }
 }
