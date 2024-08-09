@@ -77,18 +77,9 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
                 "CREATE INDEX IF NOT EXISTS \"" + table.getName() + "_s_idx\" ON " + table + " (\"success\");";
     }
 
-    /**
-     * YugabyteDB does not support PG Advisor Locks. So the YugabyteDB plugin
-     * employs SELECT ... FOR UPDATE in a transaction to implement locking for
-     * Flyway operations instead of the PG Advisory locks. If a single
-     * connection is used, it may cause issues if multiple threads execute
-     * begin/commit on it for Flyway operations. Returning false from this
-     * method ensures the same connection is not used for migrations.
-     * @return false
-     */
     @Override
     public boolean useSingleConnection() {
-        return false;
+        return true;
     }
 
     private void createLockTable() {
