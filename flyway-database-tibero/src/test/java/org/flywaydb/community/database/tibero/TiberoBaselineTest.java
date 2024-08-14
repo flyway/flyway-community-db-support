@@ -1,8 +1,11 @@
 package org.flywaydb.community.database.tibero;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.flywaydb.community.database.tibero.FlywayForTibero.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.PASSWORD;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.TIBERO_URL;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.USER;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.createFlyway;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class TiberoBaselineTest {
@@ -29,8 +33,8 @@ class TiberoBaselineTest {
         }
     }
 
-
     @Test
+    @DisplayName("baseline test")
     void baselineTest() throws SQLException {
 
         // create default table

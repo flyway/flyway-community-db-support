@@ -1,6 +1,7 @@
 package org.flywaydb.community.database.tibero;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -27,7 +28,8 @@ class TiberoFlywayValidateTest {
     }
 
     @Test
-    void updateChecksumMigrationTest() {
+    @DisplayName("validate test")
+    void validateTest() {
 
         boolean success = createFlyway("classpath:db/migration").migrate().success;
 
