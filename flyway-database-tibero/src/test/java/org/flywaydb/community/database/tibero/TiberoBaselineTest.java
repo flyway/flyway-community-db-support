@@ -1,6 +1,7 @@
 package org.flywaydb.community.database.tibero;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.sql.Connection;
@@ -15,10 +16,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TiberoBaselineTest {
+
     @AfterEach
     void clear() throws SQLException {
         try (Connection connection = DriverManager
-            .getConnection("jdbc:tibero:thin:@localhost:8629:tibero", "tibero", "tibero")) {
+            .getConnection(TIBERO_URL, USER, PASSWORD)) {
 
             try (Statement statement = connection.createStatement()) {
                 statement.execute("DROP TABLE flyway_users");
@@ -33,7 +35,7 @@ class TiberoBaselineTest {
 
         // create default table
         try (Connection connection = DriverManager
-            .getConnection("jdbc:tibero:thin:@localhost:8629:tibero", "tibero", "tibero")) {
+            .getConnection(TIBERO_URL, USER, PASSWORD)) {
 
             try (Statement statement = connection.createStatement()) {
 
@@ -46,11 +48,7 @@ class TiberoBaselineTest {
             }
         }
 
-        Flyway flyway = Flyway.configure()
-            .locations("classpath:db/migration")
-            .dataSource("jdbc:tibero:thin:@localhost:8629:tibero", "tibero", "tibero")
-            .baselineVersion("1")
-            .load();
+        Flyway flyway = createFlyway("db/migration");
 
         flyway.baseline();
 
@@ -58,7 +56,7 @@ class TiberoBaselineTest {
 
         // check that the baseline was successful
         try (Connection connection = DriverManager
-            .getConnection("jdbc:tibero:thin:@localhost:8629:tibero", "tibero", "tibero")) {
+            .getConnection(TIBERO_URL, USER, PASSWORD)) {
 
             try (Statement statement = connection.createStatement()) {
                 ResultSet rs = statement.executeQuery(
@@ -77,7 +75,7 @@ class TiberoBaselineTest {
         // check flyway schema history
         FlywaySchemaHistory history = null;
         try (Connection connection = DriverManager
-            .getConnection("jdbc:tibero:thin:@localhost:8629:tibero", "tibero", "tibero")) {
+            .getConnection(TIBERO_URL, USER, PASSWORD)) {
 
             try (Statement statement = connection.createStatement()) {
                 ResultSet rs = statement.executeQuery(
