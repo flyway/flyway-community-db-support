@@ -4,7 +4,6 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.File;
 import java.sql.DriverManager;
@@ -12,13 +11,13 @@ import java.sql.SQLException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Execution(SAME_THREAD)
 class DuckDBSupportTest {
 
+    private static final String NEXT_MIGRATION_LOCATION = "next_migration";
     private static final String TEST_DB_FILENAME = "target/test.db";
-    public static final String TEST_DB_CONNECTION_URL = "jdbc:duckdb:" + TEST_DB_FILENAME;
+    private static final String TEST_DB_CONNECTION_URL = "jdbc:duckdb:" + TEST_DB_FILENAME;
+    private static final String INITIAL_MIGRATION_LOCATION = "initial_migration";
 
     private final JdbcTemplate jdbcTemplate = jdbcTemplate();
 
@@ -36,7 +35,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .load();
 
         assertThat(getAllTablesNames("some_schema")).isEmpty();
@@ -57,7 +56,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .load();
 
         // when
@@ -75,7 +74,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .load();
 
         flyway.migrate();
@@ -85,7 +84,7 @@ class DuckDBSupportTest {
         // when
         Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("next_migration")
+            .locations(NEXT_MIGRATION_LOCATION)
             .load()
             .migrate();
 
@@ -99,7 +98,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .defaultSchema("some_schema")
             .load();
 
@@ -118,7 +117,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .baselineVersion("123")
             .load();
 
@@ -137,7 +136,7 @@ class DuckDBSupportTest {
         // given
         final var flyway = Flyway.configure()
             .dataSource(TEST_DB_CONNECTION_URL, "", "")
-            .locations("initial_migration")
+            .locations(INITIAL_MIGRATION_LOCATION)
             .cleanDisabled(false)
             .load();
 
