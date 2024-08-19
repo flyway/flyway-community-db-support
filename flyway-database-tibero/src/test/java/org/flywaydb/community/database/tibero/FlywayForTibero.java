@@ -5,6 +5,7 @@ import org.flywaydb.core.Flyway;
 public class FlywayForTibero {
 
     public static final String TIBERO_URL = "jdbc:tibero:thin:@localhost:8629:tibero";
+    public static final String SCHEMA = "TIBERO";
     public static final String USER = "tibero";
     public static final String PASSWORD = "tibero";
 
