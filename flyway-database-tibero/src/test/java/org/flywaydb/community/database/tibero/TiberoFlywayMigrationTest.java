@@ -87,6 +87,4 @@ public class TiberoFlywayMigrationTest {
 
         softAssertions.assertAll();
     }
-
-
 }
