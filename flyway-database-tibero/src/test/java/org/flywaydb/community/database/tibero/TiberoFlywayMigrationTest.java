@@ -51,7 +51,8 @@ public class TiberoFlywayMigrationTest {
     @Test
     @DisplayName("migration simple test")
     void migrationTest() {
-        assertThat(createFlyway("classpath:db/migration-final").migrate().success).isTrue();
+        SoftAssertions softAssertions = new SoftAssertions();
+        softAssertions.assertThat(createFlyway("classpath:db/migration-final").migrate().success).isTrue();
     }
 
     @Test
