@@ -61,7 +61,7 @@ public class TiberoFlywayMigrationTest {
         SoftAssertions softAssertions = new SoftAssertions();
 
         for (String migrationDir : EVOLUTION_SCHEMA_MIGRATION_DIRS) {
-            assertThat(createFlyway("classpath:db/" + migrationDir).migrate().success).isTrue();
+            softAssertions.assertThat(createFlyway("classpath:db/" + migrationDir).migrate().success).isTrue();
         }
 
         // 1. Verify that the flyway_schema_history table is properly logged after migration
