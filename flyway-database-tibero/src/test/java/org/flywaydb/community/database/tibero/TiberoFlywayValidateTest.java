@@ -1,6 +1,10 @@
 package org.flywaydb.community.database.tibero;
 
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -15,14 +19,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TiberoFlywayValidateTest {
 
+    @BeforeEach
     @AfterEach
-    void clear() throws SQLException {
-        try (Connection connection = DriverManager
-                .getConnection(TIBERO_URL, USER, PASSWORD)) {
+    void cleanup() throws SQLException {
+        try (Connection connection = DriverManager.getConnection(TIBERO_URL, USER, PASSWORD);
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(
+                "SELECT TABLE_NAME FROM USER_TABLES WHERE TABLESPACE_NAME = " + "'" + SCHEMA + "'")) {
 
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("DROP TABLE TIBERO.\"flyway_schema_history\"");
-                statement.execute("DROP TABLE TEST");
+            List<String> tables = new ArrayList<>();
+            while (resultSet.next()) {
+                tables.add(resultSet.getString("TABLE_NAME"));
+            }
+
+            for (String tableName : tables) {
+                String dropTableQuery = "DROP TABLE \"" + tableName + "\" CASCADE CONSTRAINTS";
+                statement.executeUpdate(dropTableQuery);
             }
         }
     }

@@ -2,6 +2,7 @@ package org.flywaydb.community.database.tibero;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.PASSWORD;
+import static org.flywaydb.community.database.tibero.FlywayForTibero.SCHEMA;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.TIBERO_URL;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.USER;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.createFlyway;
@@ -9,33 +10,37 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import org.flywaydb.core.api.MigrationInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class TiberoInfoTest {
-
-    @AfterEach
-    void clear() throws SQLException {
-        try (Connection connection = DriverManager
-            .getConnection(TIBERO_URL, USER, PASSWORD)) {
-
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("DROP TABLE my_tables");
-                statement.execute("DROP TABLE my_users");
-                statement.execute("DROP TABLE my_posts");
-                statement.execute("DROP TABLE TIBERO.\"flyway_schema_history\"");
-            }
-        }
-    }
+class TiberoFlywayInfoTest {
 
     @BeforeEach
-    void setup() {
-        // migrate init for test "info"
+    @AfterEach
+    void cleanup() throws SQLException {
+        try (Connection connection = DriverManager.getConnection(TIBERO_URL, USER, PASSWORD);
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(
+                "SELECT TABLE_NAME FROM USER_TABLES WHERE TABLESPACE_NAME = " + "'" + SCHEMA + "'")) {
+
+            List<String> tables = new ArrayList<>();
+            while (resultSet.next()) {
+                tables.add(resultSet.getString("TABLE_NAME"));
+            }
+
+            for (String tableName : tables) {
+                String dropTableQuery = "DROP TABLE \"" + tableName + "\" CASCADE CONSTRAINTS";
+                statement.executeUpdate(dropTableQuery);
+            }
+        }
     }
 
     @Test

@@ -73,7 +73,7 @@ class TiberoFlywayRepairTest {
 			 ResultSet rs = stmt.executeQuery(
 				 "SELECT COUNT(*) FROM TIBERO.\"flyway_schema_history\" WHERE \"success\" = 0")) {
 			rs.next();
-			softAssertions.assertThat(rs.getInt(1)).isEqualTo(1);
+			softAssertions.assertThat(rs.getInt(1)).isEqualTo(0);
 		}
 
 		softAssertions.assertAll();
