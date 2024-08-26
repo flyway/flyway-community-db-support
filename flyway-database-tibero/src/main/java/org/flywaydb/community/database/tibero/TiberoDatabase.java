@@ -116,13 +116,10 @@ public class TiberoDatabase extends Database<TiberoConnection> {
     Set<String> getSystemSchemas() throws SQLException {
 
         Set<String> result = new HashSet<>(Arrays.asList(
-            "SYS", "SYSTEM",
+            "SYS",
             "SYSCAT",
-            "SYSMAN",
-            "SYSGIS",
             "OUTLN",
-            "TIBERO",
-            "TIBERO1"
+            "SYSGIS"
         ));
 
         result.addAll(getMainConnection().getJdbcTemplate().queryForStringList(
