@@ -1,19 +1,41 @@
 package org.flywaydb.community.database.tibero;
 
 
-import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.*;
-
-import org.flywaydb.core.api.FlywayException;
-import org.flywaydb.core.internal.database.base.Schema;
-import org.flywaydb.core.internal.database.base.Table;
-import org.flywaydb.core.internal.jdbc.JdbcTemplate;
-import org.flywaydb.core.internal.util.StringUtils;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.CREDENTIAL;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.DATABASE_LINK;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.DIMENSION;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.DIRECTORY;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.FUNCTION;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.INDEX;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.LIBRARY;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.MATERIALIZED_VIEW;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.MATERIALIZED_VIEW_LOG;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.PACKAGE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.PACKAGE_BODY;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.PROCEDURE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.QUEUE_TABLE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SCHEDULE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SCHEDULER_CHAIN;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SCHEDULER_JOB;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SCHEDULER_PROGRAM;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SEQUENCE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SQL_TRANSLATION_PROFILE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.SYNONYM;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.TABLE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.TRIGGER;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.TYPE;
+import static org.flywaydb.community.database.tibero.TiberoSchema.ObjectType.VIEW;
 
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.internal.database.base.Schema;
+import org.flywaydb.core.internal.database.base.Table;
+import org.flywaydb.core.internal.jdbc.JdbcTemplate;
+import org.flywaydb.core.internal.util.StringUtils;
 
 public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
 
@@ -88,7 +110,7 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
             // Object types with sensitive information (passwords), skip intentionally, print warning if found.
             DATABASE_LINK,
             CREDENTIAL
-            );
+        );
 
         for (ObjectType objectType : objectTypesToClean) {
             if (objectTypeNames.contains(objectType.getName())) {
@@ -302,7 +324,16 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
             }
         },
 
-        MATERIALIZED_VIEW("MATERIALIZED VIEW", "PRESERVE TABLE"),
+        MATERIALIZED_VIEW("MATERIALIZED VIEW", "PRESERVE TABLE") {
+            @Override
+            public List<String> getObjectNames(JdbcTemplate jdbcTemplate, TiberoDatabase database,
+                TiberoSchema schema) throws SQLException {
+                return jdbcTemplate.queryForStringList(
+                    "SELECT MVIEW_NAME FROM ALL_MVIEWS WHERE OWNER = ?",
+                    schema.getName()
+                );
+            }
+        },
 
         MATERIALIZED_VIEW_LOG("MATERIALIZED VIEW LOG") {
             @Override
@@ -381,7 +412,7 @@ public class TiberoSchema extends Schema<TiberoDatabase, TiberoTable> {
         LIBRARY("LIBRARY"),
         TYPE("TYPE", "FORCE"),
         DIRECTORY("DIRECTORY"),
-        SYNONYM("SYNONYM", "FORCE"),
+        SYNONYM("SYNONYM"),
         DATABASE_LINK("DATABASE LINK") {
             @Override
             public void dropObjects(JdbcTemplate jdbcTemplate, TiberoDatabase database,

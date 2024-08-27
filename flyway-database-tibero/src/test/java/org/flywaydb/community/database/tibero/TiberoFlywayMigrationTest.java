@@ -1,6 +1,5 @@
 package org.flywaydb.community.database.tibero;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.PASSWORD;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.SCHEMA;
 import static org.flywaydb.community.database.tibero.FlywayForTibero.TIBERO_URL;
@@ -24,9 +23,9 @@ import org.junit.jupiter.api.Test;
 public class TiberoFlywayMigrationTest {
 
     private static final String[] EVOLUTION_SCHEMA_MIGRATION_DIRS = new String[]{
-        "migration-step-1", "migration-step-2", "migration-step-final"};
+        "migration-step-1", "migration"};
     private static final String[] EVOLUTION_SCHEMA_MIGRATION_SCRIPT_NAMES = new String[]{
-        "V1__create_tables.sql", "V2__insert_data.sql", "V3__add_index.sql"};
+        "V1__create_tables.sql", "V2__insert_data.sql"};
 
     @BeforeEach
     @AfterEach
@@ -52,7 +51,7 @@ public class TiberoFlywayMigrationTest {
     @DisplayName("migration simple test")
     void migrationTest() {
         SoftAssertions softAssertions = new SoftAssertions();
-        softAssertions.assertThat(createFlyway("classpath:db/migration-final").migrate().success).isTrue();
+        softAssertions.assertThat(createFlyway("classpath:db/migration").migrate().success).isTrue();
     }
 
     @Test
@@ -71,7 +70,7 @@ public class TiberoFlywayMigrationTest {
                 "SELECT COUNT(*) FROM TIBERO.\"flyway_schema_history\" WHERE \"success\" = 1")) {
 
             schema_history_cnt.next();
-            softAssertions.assertThat(schema_history_cnt.getInt(1)).isEqualTo(3);
+            softAssertions.assertThat(schema_history_cnt.getInt(1)).isEqualTo(2);
         }
 
         // 2. Verify script names

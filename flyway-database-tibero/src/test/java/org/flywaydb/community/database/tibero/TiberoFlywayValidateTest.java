@@ -53,7 +53,7 @@ class TiberoFlywayValidateTest {
             () -> assertThat(success).isTrue(),
             () -> assertThat(validateResult.validationSuccessful).isFalse(),
             () -> assertThat(validateResult.errorDetails).isNotNull(),
-            () -> assertThat(validateResult.invalidMigrations.get(0).description).isEqualTo("create test")
+            () -> assertThat(validateResult.invalidMigrations.get(0).description).isEqualTo("create failed test")
         );
     }
 }
