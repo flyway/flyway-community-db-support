@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.flywaydb</groupId>
+  <artifactId>flyway-community-db-support-archetype</artifactId>
+  <version>10.16.0</version>
+  <packaging>maven-archetype</packaging>
+
+  <name>Archetype - flyway-community-db-support-archetype</name>
+  <description>An archetype for creating a new Flyway Community Database Support module</description>
+  <url>https://flywaydb.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
+  </properties>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>${snapshotRepository.id}</id>
+      <name>${snapshotRepository.name}</name>
+      <url>${snapshotRepository.url}</url>
+    </snapshotRepository>
+    <repository>
+      <id>${releaseRepository.id}</id>
+      <name>${releaseRepository.name}</name>
+      <url>${releaseRepository.url}</url>
+    </repository>
+  </distributionManagement>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.archetype</groupId>
+        <artifactId>archetype-packaging</artifactId>
+        <version>3.2.1</version>
+      </extension>
+    </extensions>
+  </build>
+</project>

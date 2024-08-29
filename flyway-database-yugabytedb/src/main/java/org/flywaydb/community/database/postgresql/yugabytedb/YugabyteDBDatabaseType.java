@@ -67,4 +67,18 @@ public class YugabyteDBDatabaseType extends PostgreSQLDatabaseType implements Co
     public String getPluginVersion(Configuration config) {
         return YugabyteDBDatabaseExtension.readVersion();
     }
+
+    /**
+     * Returns the YugabyteDB Smart driver classname if the smart driver is
+     * being used. The plugin will work with the Postgresql JDBC driver also
+     * since the url in that case would start with 'jdbc:postgresql' which would
+     * return the PG JDBC driver class name.
+     * @param url
+     * @param classLoader
+     * @return "com.yugabyte.Driver" if url starts with "jdbc:yugabytedb:"
+     */
+    @Override
+    public String getDriverClass(String url, ClassLoader classLoader) {
+        return url.startsWith("jdbc:yugabytedb:") ? "com.yugabyte.Driver" : super.getDriverClass(url, classLoader);
+    }
 }

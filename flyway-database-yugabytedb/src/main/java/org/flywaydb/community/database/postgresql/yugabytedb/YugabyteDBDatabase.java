@@ -18,31 +18,33 @@ package org.flywaydb.community.database.postgresql.yugabytedb;
 import lombok.CustomLog;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Table;
+import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.database.postgresql.PostgreSQLDatabase;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 
 @CustomLog
 public class YugabyteDBDatabase extends PostgreSQLDatabase {
 
+    public static final String LOCK_TABLE_NAME = "YB_FLYWAY_LOCK_TABLE";
+    /**
+     * This table is used to enforce locking through SELECT ... FOR UPDATE on a
+     * token row inserted in this table. The token row is inserted with the name
+     * of the Flyway's migration history table as a token for simplicity.
+     */
+    private static final String CREATE_LOCK_TABLE_DDL = "CREATE TABLE IF NOT EXISTS " + LOCK_TABLE_NAME + " (table_name varchar PRIMARY KEY, locked bool)";
+
     public YugabyteDBDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
+        createLockTable();
     }
 
     @Override
     protected YugabyteDBConnection doGetConnection(Connection connection) {
-        Statement stmt = null;
-        try {
-            stmt = connection.createStatement();
-            stmt.execute("set yb_silence_advisory_locks_not_supported_error=on;");
-        } catch (SQLException throwable) {
-            LOG.error("Unable to set yb_silence_advisory_locks_not_supported_error ", throwable);
-        }
         return new YugabyteDBConnection(this, connection);
     }
 
@@ -75,4 +77,25 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
                 "CREATE INDEX IF NOT EXISTS \"" + table.getName() + "_s_idx\" ON " + table + " (\"success\");";
     }
 
+    /**
+     * YugabyteDB does not support PG Advisor Locks. So the YugabyteDB plugin
+     * employs SELECT ... FOR UPDATE in a transaction to implement locking for
+     * Flyway operations instead of the PG Advisory locks. If a single
+     * connection is used, it may cause issues if multiple threads execute
+     * begin/commit on it for Flyway operations. Returning false from this
+     * method ensures the same connection is not used for migrations.
+     * @return false
+     */
+    @Override
+    public boolean useSingleConnection() {
+        return false;
+    }
+
+    private void createLockTable() {
+        try {
+            jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+        } catch (SQLException e) {
+            throw new FlywaySqlException("Unable to initialize the lock table", e);
+        }
+    }
 }
