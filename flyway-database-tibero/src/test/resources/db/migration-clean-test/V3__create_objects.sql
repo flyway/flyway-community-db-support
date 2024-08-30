@@ -24,22 +24,22 @@ CREATE MATERIALIZED VIEW MV ENABLE QUERY rewrite AS
 -- create queue table
 CALL DBMS_AQADM.CREATE_QUEUE_TABLE('MY_QUEUE_TABLE', 'RAW');
 
--- create scheduler Program
-CALL DBMS_SCHEDULER.CREATE_PROGRAM(program_name   => 'MY_PROGRAM',
-                                  program_type   => 'PSM_BLOCK',
-                                  program_action => 'my_job;');
-
--- create schedule
-CALL DBMS_SCHEDULER.CREATE_SCHEDULE(
-        schedule_name   => 'MY_SCHEDULE',
-        repeat_interval => 'FREQ=HOURLY; BYHOUR=1,2,3; BYMINUTE=0; BYSECOND=30');
-
--- create scheduler Chain
-CALL DBMS_SCHEDULER.CREATE_CHAIN(chain_name          => 'MY_SCHEDULE_CHAIN',
-                                rule_set_name       => NULL,
-                                evaluation_interval => NULL,
-                                comments            => 'my first job chain');
-
+-- -- create scheduler Program
+-- CALL DBMS_SCHEDULER.CREATE_PROGRAM(program_name   => 'MY_PROGRAM',
+--                                   program_type   => 'PSM_BLOCK',
+--                                   program_action => 'my_job;');
+--
+-- -- create schedule
+-- CALL DBMS_SCHEDULER.CREATE_SCHEDULE(
+--         schedule_name   => 'MY_SCHEDULE',
+--         repeat_interval => 'FREQ=HOURLY; BYHOUR=1,2,3; BYMINUTE=0; BYSECOND=30');
+--
+-- -- create scheduler Chain
+-- CALL DBMS_SCHEDULER.CREATE_CHAIN(chain_name          => 'MY_SCHEDULE_CHAIN',
+--                                 rule_set_name       => NULL,
+--                                 evaluation_interval => NULL,
+--                                 comments            => 'my first job chain');
+--
 -- -- create scheduler Chain Rule
 -- CALL DBMS_SCHEDULER.DEFINE_CHAIN_RULE (
 --                                   'MY_SCHEDULE_CHAIN_RULE',
@@ -53,4 +53,5 @@ CALL DBMS_SCHEDULER.CREATE_CHAIN(chain_name          => 'MY_SCHEDULE_CHAIN',
 --                                   'STEP1',
 --                                   'example_program');
 
+-- create synonym
 CREATE OR REPLACE SYNONYM my_synonym FOR tibero.emp;
