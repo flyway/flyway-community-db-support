@@ -8,16 +8,16 @@ import org.flywaydb.core.internal.strategy.RetryStrategy;
 import org.flywaydb.core.internal.util.FlywayDbWebsiteLinks;
 
 import java.sql.*;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 @CustomLog
 public class YugabyteDBExecutionTemplate {
 
     private final JdbcTemplate jdbcTemplate;
     private final String tableName;
-    private final HashMap<String, Boolean> tableEntries = new HashMap<>();
-
+    private static final Map<String, Boolean> tableEntries = new ConcurrentHashMap<>();
 
     YugabyteDBExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
         this.jdbcTemplate = jdbcTemplate;
