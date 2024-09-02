@@ -76,6 +76,8 @@ class TiberoFlywayCleanTest {
             () -> assertThat(success).isTrue(),
             () -> assertThat(cleanResult.schemasCleaned).contains(TEST_USER)
         );
+
+        softAssertions.assertAll();
     }
 
     private String getCountObjectsQuery(String schema) {
