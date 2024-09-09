@@ -1,0 +1,10 @@
+services:
+  tibero-test:
+    image: ghcr.io/tibero-support/tibero7
+    platform: linux/amd64
+    ports:
+      - "8629"
+    hostname: localhost
+    volumes:
+      - ./license.xml:/tibero7/license/license.xml
+

@@ -2,12 +2,12 @@ package org.flywaydb.community.database.tibero;
 
 import org.flywaydb.core.Flyway;
 
-public class FlywayForTibero {
+class FlywayForTibero extends TestContainerBaseTests {
 
-    public static final String TIBERO_URL = "jdbc:tibero:thin:@localhost:8629:tibero";
+    public static final String TIBERO_URL = getJdbcUrl();
     public static final String SCHEMA = "TIBERO";
-    public static final String USER = "tibero";
-    public static final String PASSWORD = "tibero";
+    public static final String USER = getUsername();
+    public static final String PASSWORD = getPassword();
 
     /**
      * Create a Flyway instance for Tibero cleanDisabled is false
