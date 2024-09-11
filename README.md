@@ -85,7 +85,7 @@ Flyway for Tibero provides several core commands to manage your database migrati
 
 The `clean` command drops all objects in the configured schemas, effectively wiping the database clean.
 
-```java
+``` java
 Flyway flyway = Flyway.configure()
 	.cleanDisabled(false)
 	.dataSource(url, user, password)
@@ -106,7 +106,7 @@ flyway.clean();
 
 The `baseline` command marks an existing database state as the starting point for further migrations. It's useful when you're introducing Flyway to an existing project.
 
-```java
+``` java
 Flyway flyway = Flyway.configure()
 	.locations("classpath:db/migration", "filesystem:/path/to/migrations")
 	.dataSource(url, user, password)
@@ -123,7 +123,7 @@ flyway.baseline();
 
 The `migrate` command is the core functionality of Flyway. It scans for available migrations and applies any that haven't been run yet.
 
-```java
+``` java
 Flyway flyway = Flyway.configure()
 	.locations("classpath:db/migration", "filesystem:/path/to/migrations")
 	.dataSource("${url}", "${username}", "${password}")
