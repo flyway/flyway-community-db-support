@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.flywaydb.community.database.postgresql.yugabytedb;
+package org.flywaydb.community.database.kingbase;
 
 import lombok.CustomLog;
 import org.flywaydb.core.api.FlywayException;
@@ -26,19 +26,21 @@ import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 import org.flywaydb.core.internal.strategy.RetryStrategy;
 import org.flywaydb.core.internal.util.FlywayDbWebsiteLinks;
 
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 @CustomLog
-public class YugabyteDBExecutionTemplate {
+public class KingbaseExecutionTemplate {
 
     private final JdbcTemplate jdbcTemplate;
     private final String tableName;
     private static final Map<String, Boolean> tableEntries = new ConcurrentHashMap<>();
 
-    YugabyteDBExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
+    KingbaseExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
         this.jdbcTemplate = jdbcTemplate;
         this.tableName = tableName;
     }
@@ -77,27 +79,27 @@ public class YugabyteDBExecutionTemplate {
             if (!tableEntries.containsKey(tableName)) {
                 try {
                     statement.executeUpdate("INSERT INTO "
-                            + YugabyteDBDatabase.LOCK_TABLE_NAME
+                            + KingbaseDatabase.LOCK_TABLE_NAME
                             + " VALUES ('" + tableName + "', 'false')");
                     tableEntries.put(tableName, true);
-                    LOG.info(Thread.currentThread().getName() + "> Inserted a token row for " + tableName + " in " + YugabyteDBDatabase.LOCK_TABLE_NAME);
+                    LOG.info(Thread.currentThread().getName() + "> Inserted a token row for " + tableName + " in " + KingbaseDatabase.LOCK_TABLE_NAME);
                 } catch (SQLException e) {
                     if ("23505".equals(e.getSQLState())) {
                         // 23505 == UNIQUE_VIOLATION
                         LOG.debug(Thread.currentThread().getName() + "> Token row already added for " + tableName);
                     } else {
-                        throw new FlywaySqlException("Could not add token row for " + tableName + " in table " + YugabyteDBDatabase.LOCK_TABLE_NAME, e);
+                        throw new FlywaySqlException("Could not add token row for " + tableName + " in table " + KingbaseDatabase.LOCK_TABLE_NAME, e);
                     }
                 }
             }
 
             boolean locked;
             String selectForUpdate = "SELECT locked FROM "
-                    + YugabyteDBDatabase.LOCK_TABLE_NAME
+                    + KingbaseDatabase.LOCK_TABLE_NAME
                     + " WHERE table_name = '"
                     + tableName
                     + "' FOR UPDATE";
-            String updateLocked = "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME
+            String updateLocked = "UPDATE " + KingbaseDatabase.LOCK_TABLE_NAME
                     + " SET locked = true WHERE table_name = '"
                     + tableName + "'";
 
@@ -148,12 +150,12 @@ public class YugabyteDBExecutionTemplate {
         try {
             statement = jdbcTemplate.getConnection().createStatement();
             statement.execute("BEGIN");
-            ResultSet rs = statement.executeQuery("SELECT locked FROM " + YugabyteDBDatabase.LOCK_TABLE_NAME + " WHERE table_name = '" + tableName + "' FOR UPDATE");
+            ResultSet rs = statement.executeQuery("SELECT locked FROM " + KingbaseDatabase.LOCK_TABLE_NAME + " WHERE table_name = '" + tableName + "' FOR UPDATE");
 
             if (rs.next()) {
                 boolean locked = rs.getBoolean("locked");
                 if (locked) {
-                    statement.executeUpdate("UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME + " SET locked = false WHERE table_name = '" + tableName + "'");
+                    statement.executeUpdate("UPDATE " + KingbaseDatabase.LOCK_TABLE_NAME + " SET locked = false WHERE table_name = '" + tableName + "'");
                 } else {
                     // Unexpected. This may happen only when callable took too long to complete
                     // and another thread forcefully reset it.
