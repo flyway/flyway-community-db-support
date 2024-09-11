@@ -22,7 +22,6 @@ jobs:
         id: extract_version_name
 
       - name: Release 생성
-        if: startsWith(github.head_ref, 'release/') && contains(github.head_ref, '.')
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
