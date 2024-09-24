@@ -77,7 +77,7 @@ public class DB2ZParser extends Parser {
                                                  int statementPos, int statementLine, int statementCol,
                                                  int nonCommentPartPos, int nonCommentPartLine, int nonCommentPartCol,
                                                  StatementType statementType, boolean canExecuteInTransaction,
-                                                 Delimiter delimiter, String sql, boolean batchable) throws IOException {
+                                                 Delimiter delimiter, String sql, List<Token> tokens, boolean batchable) throws IOException {
         LOG.debug(sql);
         if (statementType == DB2Z_CALL_STATEMENT) {
             Matcher callMatcher = DB2Z_CALL_WITH_PARMS_REGEX.matcher(sql);
@@ -108,7 +108,7 @@ public class DB2ZParser extends Parser {
         LOG.debug("createStatement: DB2Z CALL no parms " + statementType + " " + sql);
         return super.createStatement(reader, recorder, statementPos, statementLine, statementCol,
                 nonCommentPartPos, nonCommentPartLine, nonCommentPartCol,
-                statementType, canExecuteInTransaction, delimiter, sql, batchable
+                statementType, canExecuteInTransaction, delimiter, sql, tokens, batchable
         );
     }
 
