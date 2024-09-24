@@ -21,14 +21,14 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
-        <version>10.17.0</version>
+        <version>10.18.1</version>
         <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.16.1</version>
+    <version>10.16.2</version>
     <name>${project.artifactId}</name>
 
     <modules>
@@ -43,7 +43,7 @@
     </modules>
 
     <properties>
-        <version.flyway>10.17.0</version.flyway>
+        <version.flyway>10.18.1</version.flyway>
     </properties>
 
     <dependencyManagement>
