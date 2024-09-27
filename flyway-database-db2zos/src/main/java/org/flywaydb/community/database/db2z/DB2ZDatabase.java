@@ -57,11 +57,11 @@ public class DB2ZDatabase extends Database<DB2ZConnection> {
 
     @Override
     public void ensureSupported(Configuration configuration) {
-        ensureDatabaseIsRecentEnough("10.0");
+        ensureDatabaseIsRecentEnough("12.1");
 
-        ensureDatabaseNotOlderThanOtherwiseRecommendUpgradeToFlywayEdition("11.0", Tier.PREMIUM, configuration);
+        //ensureDatabaseNotOlderThanOtherwiseRecommendUpgradeToFlywayEdition("12.1", Tier.PREMIUM, configuration);
 
-        recommendFlywayUpgradeIfNecessary("12.1");
+        recommendFlywayUpgradeIfNecessary("13.1");
     }
 
     @Override
