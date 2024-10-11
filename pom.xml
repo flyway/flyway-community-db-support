@@ -43,7 +43,7 @@
     </modules>
 
     <properties>
-        <version.flyway>10.18.1</version.flyway>
+        <version.flyway>10.19.0</version.flyway>
     </properties>
 
     <dependencyManagement>
