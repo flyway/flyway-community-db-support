@@ -40,6 +40,7 @@
         <module>flyway-database-databricks</module>
         <module>flyway-database-db2zos</module>
         <module>flyway-community-db-support-archetype</module>
+        <module>flyway-database-tibero</module>
     </modules>
 
     <properties>
