@@ -8,6 +8,7 @@ import org.flywaydb.core.internal.util.FlywayDbWebsiteLinks;
 import org.flywaydb.core.internal.util.SqlCallable;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -20,6 +21,9 @@ public class YugabyteDBExecutionTemplate {
     private final String tableName;
     private static final Map<String, Boolean> tableEntries = new ConcurrentHashMap<>();
     private static final Random random = new Random();
+    public static final int DEFAULT_LOCK_ID_TTL = 1000 * 60;
+    public static final int MAX_LOCK_ID_TTL = 1000 * 60 * 10;
+    public static final String LOCK_ID_TTL_SYS_PROP_NAME = "flyway.yugabytedb.lock-id-ttl";
 
     YugabyteDBExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
         this.jdbcTemplate = jdbcTemplate;
@@ -63,10 +67,12 @@ public class YugabyteDBExecutionTemplate {
 
             if (!tableEntries.containsKey(tableName)) {
                 try {
+                    String now = new Timestamp(Instant.now().getEpochSecond()).toString();
                     statement.executeUpdate("INSERT INTO "
                             + YugabyteDBDatabase.LOCK_TABLE_NAME
-                            + " VALUES ('" + tableName + "', 0)");
+                            + " VALUES ('" + tableName + "', 0, '" + now + "')");
                     tableEntries.put(tableName, true);
+                    LOG.info("insert query ts: " + now);
                     LOG.info(Thread.currentThread().getName() + "> Inserted a token row for " + tableName + " in " + YugabyteDBDatabase.LOCK_TABLE_NAME);
                 } catch (SQLException e) {
                     if ("23505".equals(e.getSQLState())) {
@@ -79,7 +85,7 @@ public class YugabyteDBExecutionTemplate {
             }
 
             long lockIdRead = 0;
-            String selectForUpdate = "SELECT lock_id FROM "
+            String selectForUpdate = "SELECT lock_id, ts FROM "
                     + YugabyteDBDatabase.LOCK_TABLE_NAME
                     + " WHERE table_name = '"
                     + tableName
@@ -90,18 +96,33 @@ public class YugabyteDBExecutionTemplate {
             ResultSet rs = statement.executeQuery(selectForUpdate);
             if (rs.next()) {
                 lockIdRead = rs.getLong("lock_id");
+                Timestamp tsRead = rs.getTimestamp("ts");
+                String current = new Timestamp(Instant.now().getEpochSecond()).toString();
+                long lockIdTtl = DEFAULT_LOCK_ID_TTL;
+                String sysProp = System.getProperty(LOCK_ID_TTL_SYS_PROP_NAME);
+                if (sysProp != null) {
+                    try {
+                        lockIdTtl = Long.parseLong(sysProp);
+                        lockIdTtl = lockIdTtl < 0 || lockIdTtl > MAX_LOCK_ID_TTL ? DEFAULT_LOCK_ID_TTL : lockIdTtl;
+                    } catch (NumberFormatException e) {
+                        LOG.warn("Invalid value for flyway.yugabytedb.lockIdTtl: " + sysProp + ". Using default value " + DEFAULT_LOCK_ID_TTL + " ms");
+                    }
+                }
 
-                if (lockIdRead != 0) {
-                    statement.execute("COMMIT");
-                    txStarted = false;
-                    LOG.debug(Thread.currentThread().getName() + "> Another Flyway operation is in progress. Allowing it to complete");
-                } else {
+                if (lockIdRead == 0 || Instant.now().getEpochSecond() - tsRead.getTime() > lockIdTtl) {
                     lockIdToBeReturned = random.nextLong();
+                    if (lockIdRead == 0) {
+                        LOG.debug(Thread.currentThread().getName() + "> Setting lock_id = " + lockIdToBeReturned);
+                    } else {
+                        LOG.warn(Thread.currentThread().getName() + "> Lock is older than 5 minutes for lock_id " + lockIdRead + ". Resetting it to " + lockIdToBeReturned);
+                    }
                     String updateLockId = "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME
-                            + " SET lock_id = " + lockIdToBeReturned + " WHERE table_name = '"
+                            + " SET lock_id = " + lockIdToBeReturned + ", ts = '" + current + "' WHERE table_name = '"
                             + tableName + "'";
-                    LOG.debug(Thread.currentThread().getName() + "> Setting lock_id = " + lockIdToBeReturned);
+                    LOG.debug(Thread.currentThread().getName() + "> executing query " + updateLockId);
                     statement.executeUpdate(updateLockId);
+                } else {
+                    LOG.debug(Thread.currentThread().getName() + "> Another Flyway operation is in progress. Allowing it to complete");
                 }
             } else {
                 // For some reason the record was not found, retry

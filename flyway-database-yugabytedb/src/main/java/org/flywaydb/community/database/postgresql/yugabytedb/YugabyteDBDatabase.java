@@ -37,7 +37,7 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
      * token row inserted in this table. The token row is inserted with the name
      * of the Flyway's migration history table as a token for simplicity.
      */
-    private static final String CREATE_LOCK_TABLE_DDL = "CREATE TABLE IF NOT EXISTS " + LOCK_TABLE_NAME + " (table_name varchar PRIMARY KEY, lock_id bigint)";
+    private static final String CREATE_LOCK_TABLE_DDL = "CREATE TABLE IF NOT EXISTS " + LOCK_TABLE_NAME + " (table_name varchar PRIMARY KEY, lock_id bigint, ts timestamp)";
 
     public YugabyteDBDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
