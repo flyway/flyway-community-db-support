@@ -25,13 +25,15 @@ import org.flywaydb.database.postgresql.PostgreSQLDatabase;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 
 @CustomLog
 public class YugabyteDBDatabase extends PostgreSQLDatabase {
 
     public static final String LOCK_TABLE_NAME = "YB_FLYWAY_LOCK_TABLE";
-    private static final String DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS " + LOCK_TABLE_NAME;
+    private static final String LOCK_TABLE_SCHEMA_SQL = "SELECT table_name, column_name FROM information_schema.columns WHERE table_name = '" + LOCK_TABLE_NAME + "'";
+    private static final String DROP_LOCK_TABLE_IF_EXISTS_DDL = "DROP TABLE IF EXISTS " + LOCK_TABLE_NAME;
     /**
      * This table is used to enforce locking through SELECT ... FOR UPDATE on a
      * token row inserted in this table. The token row is inserted with the name
@@ -85,8 +87,21 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
 
     private void createLockTable() {
         try {
-            jdbcTemplate.execute(DROP_TABLE_IF_EXISTS);
-            jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+            List<String> columns = jdbcTemplate.query(LOCK_TABLE_SCHEMA_SQL, rs -> rs.getString("column_name"));
+            if (columns.isEmpty()) {
+                LOG.debug("Lock table not found, creating it...");
+                jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+            } else {
+                for (String column : columns) {
+                    if ("lock_id".equals(column)) {
+                        LOG.debug("Lock table with expected schema already exists");
+                        return;
+                    }
+                }
+                LOG.info("Lock table exists but has old schema. Dropping and recreating it with new schema...");
+                jdbcTemplate.execute(DROP_LOCK_TABLE_IF_EXISTS_DDL);
+                jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+            }
         } catch (SQLException e) {
             throw new FlywaySqlException("Unable to initialize the lock table", e);
         }

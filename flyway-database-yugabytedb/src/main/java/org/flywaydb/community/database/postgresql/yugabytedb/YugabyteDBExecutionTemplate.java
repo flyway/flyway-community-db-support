@@ -21,8 +21,8 @@ public class YugabyteDBExecutionTemplate {
     private final String tableName;
     private static final Map<String, Boolean> tableEntries = new ConcurrentHashMap<>();
     private static final Random random = new Random();
-    public static final int DEFAULT_LOCK_ID_TTL = 1000 * 60;
-    public static final int MAX_LOCK_ID_TTL = 1000 * 60 * 10;
+    public static final int DEFAULT_LOCK_ID_TTL = 1000 * 60 * 5;
+    public static final int MAX_LOCK_ID_TTL = 1000 * 60 * 30;
     public static final String LOCK_ID_TTL_SYS_PROP_NAME = "flyway.yugabytedb.lock-id-ttl";
 
     YugabyteDBExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
