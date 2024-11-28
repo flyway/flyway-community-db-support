@@ -5,7 +5,7 @@ Supported databases in this repository will be released as part of Flyway.
 
 ## Contributing
 
-Want to add support for a new database? [See our contributing docs for more information](https://documentation.red-gate.com/flyway/flyway-cli-and-api/contribute/contributing-database-compatibility-to-flyway).
+Want to add support for a new database? [See our contributing docs for more information](https://documentation.red-gate.com/fd/flyway-community-database-support-233445293.html).
 
 ## Versioning
 
