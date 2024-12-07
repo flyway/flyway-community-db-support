@@ -133,31 +133,29 @@ public class TimeplusDatabase extends Database<TimeplusConnection> {
         String clusterName = getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
 
-        String script = "CREATE STREAM IF NOT EXISTS " + table + (false&&isClustered ? (" ON CLUSTER " + clusterName) : "") + "(" +
-                "    installed_rank int32," +
-                "    version nullable(string)," +
-                "    description string," +
-                "    type string," +
-                "    script string," +
-                "    checksum nullable(int32)," +
-                "    installed_by string," +
-                "    installed_on datetime DEFAULT now()," +
-                "    execution_time int32," +
-                "    success bool" +
+        String script = "CREATE STREAM IF NOT EXISTS " + table + (isClustered ? (" ON CLUSTER " + clusterName) : "") + "(" +
+                        "    installed_rank int32," +
+                        "    version nullable(string)," +
+                        "    description string," +
+                        "    type string," +
+                        "    script string," +
+                        "    checksum nullable(int32)," +
+                        "    installed_by string," +
+                        "    installed_on datetime DEFAULT now()," +
+                        "    execution_time int32," +
+                        "    success bool" +
                 ")";
 
         String engine;
 
-        /*
         if (isClustered) {
             engine = "ReplicatedMergeTree('" + getZookeeperPath() + "', '{replica}')";
         } else {
             engine = "MergeTree";
         }
-        */
 
-        script += //" ENGINE = " + engine +
-                  " PRIMARY KEY (script);";
+        script += " ENGINE = " + engine +
+                " PRIMARY KEY (script);";
 
         return script + (baseline ? getBaselineStatement(table) + ";" : "");
     }
