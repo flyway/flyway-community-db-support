@@ -138,3 +138,4 @@ buildNumber.properties
 *_REMOTE_*.txt
 
 .DS_Store
+*.cfg
