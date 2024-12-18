@@ -40,6 +40,7 @@ import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
+import org.flywaydb.core.internal.util.Pair;
 import org.flywaydb.core.internal.util.StringUtils;
 
 import java.sql.Connection;
@@ -158,5 +159,11 @@ public class TimeplusDatabase extends Database<TimeplusConnection> {
                 " PRIMARY KEY (script);";
 
         return script + (baseline ? getBaselineStatement(table) + ";" : "");
+    }
+
+    @Override
+    public Pair<String, Object> getDeleteStatement(Table table, boolean version, String filter) {
+        String deleteStatement = "ALTER STREAM " + table + " DELETE WHERE " + this.quote("success") + " = " + this.getBooleanFalse() + " AND " + (version ? this.quote("version") + " = ?" : this.quote("description") + " = ?");
+        return Pair.of(deleteStatement, filter);
     }
 }
