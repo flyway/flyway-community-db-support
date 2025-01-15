@@ -166,4 +166,14 @@ public class TimeplusDatabase extends Database<TimeplusConnection> {
         String deleteStatement = "ALTER STREAM " + table + " DELETE WHERE " + this.quote("success") + " = " + this.getBooleanFalse() + " AND " + (version ? this.quote("version") + " = ?" : this.quote("description") + " = ?");
         return Pair.of(deleteStatement, filter);
     }
+
+    @Override
+    public String getUpdateStatement(Table table) {
+        return "ALTER STREAM " + table
+               + " UPDATE "
+               + quote("description") + "=? , "
+               + quote("type") + "=? , "
+               + quote("checksum") + "=?"
+               + " WHERE " + quote("installed_rank") + "=?";
+    }
 }
