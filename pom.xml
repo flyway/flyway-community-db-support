@@ -1,4 +1,4 @@
-<!--
+<?xml version="1.0" encoding="UTF-8"?><!--
 
     Copyright (C) Red Gate Software Ltd 2010-2024
 
@@ -14,98 +14,91 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-parent</artifactId>
-        <version>10.18.1</version>
-        <relativePath/>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>flyway-community-db-support</artifactId>
-    <packaging>pom</packaging>
-    <version>10.16.3</version>
-    <name>${project.artifactId}</name>
-
-    <modules>
-        <module>flyway-database-tidb</module>
-        <module>flyway-database-ignite</module>
-        <module>flyway-database-yugabytedb</module>
-        <module>flyway-database-clickhouse</module>
-        <module>flyway-database-oceanbase</module>
-        <module>flyway-database-databricks</module>
-        <module>flyway-database-db2zos</module>
-        <module>flyway-community-db-support-archetype</module>
-    </modules>
-
-    <properties>
-        <version.flyway>10.19.0</version.flyway>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>flyway-core</artifactId>
-                <version>${version.flyway}</version>
-                <scope>provided</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.10</version>
-                    <configuration>
-                        <skip>true</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>copy-license</id>
-                            <goals>
-                                <goal>copy-resources</goal>
-                            </goals>
-                            <phase>generate-resources</phase>
-                            <configuration>
-                                <resources>
-                                    <resource>
-                                        <directory>..</directory>
-                                        <includes>
-                                            <include>LICENSE.txt</include>
-                                            <include>README.txt</include>
-                                        </includes>
-                                    </resource>
-                                </resources>
-                                <outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>maven-bundle-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>bundle-manifest</id>
-                            <phase>process-classes</phase>
-                            <goals>
-                                <goal>manifest</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-parent</artifactId>
+    <version>10.18.1</version>
+    <relativePath/>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>flyway-community-db-support</artifactId>
+  <packaging>pom</packaging>
+  <version>10.16.3</version>
+  <name>${project.artifactId}</name>
+  <modules>
+    <module>flyway-database-tidb</module>
+    <module>flyway-database-ignite</module>
+    <module>flyway-database-yugabytedb</module>
+    <module>flyway-database-clickhouse</module>
+    <module>flyway-database-oceanbase</module>
+    <module>flyway-database-databricks</module>
+    <module>flyway-database-db2zos</module>
+    <module>flyway-community-db-support-archetype</module>
+      <module>flyway-database-kingdb</module>
+  </modules>
+  <properties>
+    <version.flyway>10.19.0</version.flyway>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${version.flyway}</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.10</version>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>copy-license</id>
+              <goals>
+                <goal>copy-resources</goal>
+              </goals>
+              <phase>generate-resources</phase>
+              <configuration>
+                <resources>
+                  <resource>
+                    <directory>..</directory>
+                    <includes>
+                      <include>LICENSE.txt</include>
+                      <include>README.txt</include>
+                    </includes>
+                  </resource>
+                </resources>
+                <outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>bundle-manifest</id>
+              <phase>process-classes</phase>
+              <goals>
+                <goal>manifest</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>
