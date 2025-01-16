@@ -1,5 +1,6 @@
 package org.flywaydb.community.database.databricks;
 
+import org.flywaydb.community.database.DatabricksDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -60,5 +61,10 @@ public class DatabricksDatabaseType extends BaseDatabaseType implements Communit
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
         return new DatabricksParser(configuration, parsingContext);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return DatabricksDatabaseExtension.readVersion();
     }
 }

@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.flywaydb</groupId>
   <artifactId>flyway-community-db-support-archetype</artifactId>
-  <version>10.16.3</version>
+  <version>10.16.4</version>
   <packaging>maven-archetype</packaging>
 
   <name>Archetype - flyway-community-db-support-archetype</name>
@@ -31,6 +31,13 @@
   </distributionManagement>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <version>3.3.0</version>
+      </plugin>
+    </plugins>
     <extensions>
       <extension>
         <groupId>org.apache.maven.archetype</groupId>
