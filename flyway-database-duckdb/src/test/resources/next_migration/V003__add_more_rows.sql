@@ -1,0 +1,1 @@
+INSERT INTO ${flyway:defaultSchema}.some_table(id, text) VALUES (3, 'third');

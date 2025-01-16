@@ -39,6 +39,7 @@
         <module>flyway-database-oceanbase</module>
         <module>flyway-database-databricks</module>
         <module>flyway-database-db2zos</module>
+        <module>flyway-database-duckdb</module>
         <module>flyway-community-db-support-archetype</module>
     </modules>
 
