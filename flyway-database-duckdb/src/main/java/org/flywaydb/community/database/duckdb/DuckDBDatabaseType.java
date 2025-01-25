@@ -1,5 +1,6 @@
 package org.flywaydb.community.database.duckdb;
 
+import org.flywaydb.community.database.DuckDBDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -46,5 +47,10 @@ public class DuckDBDatabaseType extends BaseDatabaseType implements CommunityDat
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider, ParsingContext parsingContext) {
         return new DuckDBParser(configuration, parsingContext);
+    }
+
+    @Override
+    public String getPluginVersion(Configuration config) {
+        return DuckDBDatabaseExtension.readVersion();
     }
 }
