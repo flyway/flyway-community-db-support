@@ -22,8 +22,8 @@ public class YugabyteDBExecutionTemplate {
     private static final Map<String, Boolean> tableEntries = new ConcurrentHashMap<>();
     private static final Random random = new Random();
     public static final int DEFAULT_LOCK_ID_TTL = 1000 * 60 * 5;
-    public static final int MAX_LOCK_ID_TTL = 1000 * 60 * 30;
-    public static final String LOCK_ID_TTL_SYS_PROP_NAME = "flyway.yugabytedb.lock-id-ttl";
+    public static final int MAX_LOCK_ID_TTL = 1000 * 60 * 60;
+    public static final String LOCK_ID_TTL_SYS_PROP_NAME = "flyway.yugabytedb.lock-id-ttl-ms";
 
     YugabyteDBExecutionTemplate(JdbcTemplate jdbcTemplate, String tableName) {
         this.jdbcTemplate = jdbcTemplate;
@@ -105,7 +105,7 @@ public class YugabyteDBExecutionTemplate {
                         lockIdTtl = Long.parseLong(sysProp);
                         lockIdTtl = lockIdTtl < 0 || lockIdTtl > MAX_LOCK_ID_TTL ? DEFAULT_LOCK_ID_TTL : lockIdTtl;
                     } catch (NumberFormatException e) {
-                        LOG.warn("Invalid value for flyway.yugabytedb.lockIdTtl: " + sysProp + ". Using default value " + DEFAULT_LOCK_ID_TTL + " ms");
+                        LOG.warn("Invalid value for " + LOCK_ID_TTL_SYS_PROP_NAME + ": " + sysProp + ". Using default value: " + DEFAULT_LOCK_ID_TTL + " ms");
                     }
                 }
 
@@ -114,7 +114,7 @@ public class YugabyteDBExecutionTemplate {
                     if (lockIdRead == 0) {
                         LOG.debug(Thread.currentThread().getName() + "> Setting lock_id = " + lockIdToBeReturned);
                     } else {
-                        LOG.warn(Thread.currentThread().getName() + "> Lock is older than 5 minutes for lock_id " + lockIdRead + ". Resetting it to " + lockIdToBeReturned);
+                        LOG.warn(Thread.currentThread().getName() + "> Lock with lock_id " + lockIdRead + " is held for more than " + lockIdTtl + " millis. Resetting it with lock_id " + lockIdToBeReturned);
                     }
                     String updateLockId = "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME
                             + " SET lock_id = " + lockIdToBeReturned + ", ts = '" + current + "' WHERE table_name = '"
