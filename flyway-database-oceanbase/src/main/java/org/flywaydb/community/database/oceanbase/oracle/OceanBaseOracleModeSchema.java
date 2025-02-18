@@ -501,20 +501,35 @@ public class OceanBaseOracleModeSchema extends Schema<OceanBaseOracleModeDatabas
          */
         public static Set<String> getObjectTypeNames(JdbcTemplate jdbcTemplate, OceanBaseOracleModeDatabase database, OceanBaseOracleModeSchema schema) throws SQLException {
             boolean materializedViewEnable = schema.greaterThanCurrentVersion("4.3");
+            StringBuilder queryBuilder = new StringBuilder();
 
-            String query =
-                    // Most object types can be correctly selected from DBA_/ALL_OBJECTS.
-                    "SELECT DISTINCT OBJECT_TYPE FROM " + database.dbaOrAll("OBJECTS") + " WHERE OWNER = ? " +
-                            // Materialized view logs.
-                            // Oceanbase supports materialized views starting from version 4.3.x.
-                            (materializedViewEnable ? "UNION SELECT '" + MATERIALIZED_VIEW_LOG.getName() + "' FROM DUAL WHERE EXISTS(" + "SELECT * FROM ALL_MVIEW_LOGS WHERE LOG_OWNER = ?) " : "");
+            // Base query to select distinct object types
+            queryBuilder.append("SELECT DISTINCT OBJECT_TYPE FROM ")
+                    .append(database.dbaOrAll("OBJECTS"))
+                    .append(" WHERE OWNER = ? ");
 
-            int n = 2;
-            String[] params = new String[n];
+            // Add materialized view log conditionally
+            if (materializedViewEnable) {
+                queryBuilder.append("UNION SELECT '")
+                        .append(MATERIALIZED_VIEW_LOG.getName())
+                        .append("' FROM DUAL WHERE EXISTS (SELECT * FROM ALL_MVIEW_LOGS WHERE LOG_OWNER = ?)");
+            }
+
+            String query = queryBuilder.toString();
+
+            // Prepare parameters
+            int paramCount = materializedViewEnable ? 2 : 1;
+            String[] params = new String[paramCount];
             Arrays.fill(params, schema.getName());
 
+            if (materializedViewEnable) {
+                params[1] = schema.getName(); // Set the same schema name for the second parameter
+            }
+
+            // Execute the query and return the result as a Set
             return new HashSet<>(jdbcTemplate.queryForStringList(query, params));
         }
+
 
         /**
          * Checks whether the specified schema contains object types that can be cleaned.
