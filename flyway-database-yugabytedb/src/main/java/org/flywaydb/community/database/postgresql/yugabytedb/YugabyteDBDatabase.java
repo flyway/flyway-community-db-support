@@ -18,31 +18,36 @@ package org.flywaydb.community.database.postgresql.yugabytedb;
 import lombok.CustomLog;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Table;
+import org.flywaydb.core.internal.exception.FlywaySqlException;
 import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.database.postgresql.PostgreSQLDatabase;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.List;
 
 
 @CustomLog
 public class YugabyteDBDatabase extends PostgreSQLDatabase {
 
+    public static final String LOCK_TABLE_NAME = "YB_FLYWAY_LOCK_TABLE";
+    private static final String LOCK_TABLE_SCHEMA_SQL = "SELECT table_name, column_name FROM information_schema.columns WHERE table_name = '" + LOCK_TABLE_NAME + "'";
+    private static final String DROP_LOCK_TABLE_IF_EXISTS_DDL = "DROP TABLE IF EXISTS " + LOCK_TABLE_NAME;
+    /**
+     * This table is used to enforce locking through SELECT ... FOR UPDATE on a
+     * token row inserted in this table. The token row is inserted with the name
+     * of the Flyway's migration history table as a token for simplicity.
+     */
+    private static final String CREATE_LOCK_TABLE_DDL = "CREATE TABLE IF NOT EXISTS " + LOCK_TABLE_NAME + " (table_name varchar PRIMARY KEY, lock_id bigint, ts timestamp)";
+
     public YugabyteDBDatabase(Configuration configuration, JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
+        createLockTable();
     }
 
     @Override
     protected YugabyteDBConnection doGetConnection(Connection connection) {
-        Statement stmt = null;
-        try {
-            stmt = connection.createStatement();
-            stmt.execute("set yb_silence_advisory_locks_not_supported_error=on;");
-        } catch (SQLException throwable) {
-            LOG.error("Unable to set yb_silence_advisory_locks_not_supported_error ", throwable);
-        }
         return new YugabyteDBConnection(this, connection);
     }
 
@@ -75,4 +80,30 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
                 "CREATE INDEX IF NOT EXISTS \"" + table.getName() + "_s_idx\" ON " + table + " (\"success\");";
     }
 
+    @Override
+    public boolean useSingleConnection() {
+        return true;
+    }
+
+    private void createLockTable() {
+        try {
+            List<String> columns = jdbcTemplate.query(LOCK_TABLE_SCHEMA_SQL, rs -> rs.getString("column_name"));
+            if (columns.isEmpty()) {
+                LOG.debug("Lock table not found, creating it...");
+                jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+            } else {
+                for (String column : columns) {
+                    if ("lock_id".equals(column)) {
+                        LOG.debug("Lock table with expected schema already exists");
+                        return;
+                    }
+                }
+                LOG.info("Lock table exists but has old schema. Dropping and recreating it with new schema...");
+                jdbcTemplate.execute(DROP_LOCK_TABLE_IF_EXISTS_DDL);
+                jdbcTemplate.execute(CREATE_LOCK_TABLE_DDL);
+            }
+        } catch (SQLException e) {
+            throw new FlywaySqlException("Unable to initialize the lock table", e);
+        }
+    }
 }

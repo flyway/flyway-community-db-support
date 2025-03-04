@@ -1,0 +1,2 @@
+org.flywaydb.community.database.timeplus.TimeplusConfigurationExtension
+org.flywaydb.community.database.timeplus.TimeplusDatabaseType
