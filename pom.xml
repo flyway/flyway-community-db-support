@@ -35,6 +35,7 @@
         <module>flyway-database-tidb</module>
         <module>flyway-database-ignite</module>
         <module>flyway-database-yugabytedb</module>
+        <module>flyway-database-cubrid</module>
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
         <module>flyway-database-databricks</module>
