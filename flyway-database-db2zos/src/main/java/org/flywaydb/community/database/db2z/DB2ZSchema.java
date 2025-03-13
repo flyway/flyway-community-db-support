@@ -141,16 +141,19 @@ public class DB2ZSchema extends Schema<DB2ZDatabase, DB2ZTable> {
             jdbcTemplate.execute(dropStatement);
         }
 
-        // procedures
-        for (String dropStatement : generateDropStatementsForProcedures()) {
-            jdbcTemplate.execute(dropStatement);
-        }
-
         // triggers
         for (String dropStatement : generateDropStatementsForTriggers()) {
             jdbcTemplate.execute(dropStatement);
         }
   
+        // drop procedures by iteratively dropping procedues without dependents (until no procedures are remaining)
+        do {
+            dropStatements = generateDropStatementsForProceduresWithoutDependents();
+            for (String dropStatement : dropStatements) {
+                jdbcTemplate.execute(dropStatement);
+            }
+        } while (dropStatements.size() > 0);
+
         for (Function function : allFunctions()) {
             function.drop();
         }
@@ -176,14 +179,16 @@ public class DB2ZSchema extends Schema<DB2ZDatabase, DB2ZTable> {
     }
 
     /**
-     * Generates DROP statements for the procedures in this schema.
+     * Generates DROP statements for the procedures in this schema that do not have dependent procedures.
      *
      * @return The drop statements.
      * @throws SQLException when the statements could not be generated.
      */
-    private List<String> generateDropStatementsForProcedures() throws SQLException {
-        String dropProcGenQuery = "select rtrim(NAME) from SYSIBM.SYSROUTINES where CAST_FUNCTION = 'N' " +
-                " and ROUTINETYPE  = 'P' and SCHEMA = '" + name + "' and OWNER = '" + this.getSqlId() + "'";
+    private List<String> generateDropStatementsForProceduresWithoutDependents() throws SQLException {
+        String dropProcGenQuery = "select rtrim(sr.NAME) from SYSIBM.SYSROUTINES sr where sr.CAST_FUNCTION = 'N'" +
+                " and sr.ROUTINETYPE  = 'P' and sr.SCHEMA = '" + name + "' and sr.OWNER = '" + this.getSqlId() + "'" + 
+                " and not exists ( select * from SYSIBM.SYSDEPENDENCIES sd where sd.BNAME=sr.NAME" + 
+                " and sd.BSCHEMA=sr.SCHEMA and sd.DTYPE='O' )";
         return buildDropStatements("DROP PROCEDURE", dropProcGenQuery);
     }
 
