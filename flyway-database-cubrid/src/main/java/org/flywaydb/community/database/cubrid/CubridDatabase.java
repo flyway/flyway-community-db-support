@@ -24,17 +24,17 @@ import org.flywaydb.core.internal.jdbc.JdbcConnectionFactory;
 import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 
 @CustomLog
-public class CUBRIDDatabase extends Database<CUBRIDConnection> {
+public class CubridDatabase extends Database<CubridConnection> {
 
-    public CUBRIDDatabase(Configuration configuration,
+    public CubridDatabase(Configuration configuration,
         JdbcConnectionFactory jdbcConnectionFactory,
         StatementInterceptor statementInterceptor) {
         super(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
     @Override
-    protected CUBRIDConnection doGetConnection(Connection connection) {
-        return new CUBRIDConnection(this, connection);
+    protected CubridConnection doGetConnection(Connection connection) {
+        return new CubridConnection(this, connection);
     }
 
     @Override

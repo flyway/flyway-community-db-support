@@ -23,14 +23,14 @@ import java.sql.SQLException;
 import org.flywaydb.core.internal.database.base.Schema;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 
-public class CUBRIDSchema extends Schema<CUBRIDDatabase, CUBRIDTable> {
+public class CubridSchema extends Schema<CubridDatabase, CubridTable> {
 
     /**
      * @param jdbcTemplate The Jdbc Template for communicating with the DB.
      * @param database     The database-specific support.
      * @param name         The name of the schema.
      */
-    public CUBRIDSchema(JdbcTemplate jdbcTemplate, CUBRIDDatabase database, String name) {
+    public CubridSchema(JdbcTemplate jdbcTemplate, CubridDatabase database, String name) {
         super(jdbcTemplate, database, name);
     }
 
@@ -60,22 +60,22 @@ public class CUBRIDSchema extends Schema<CUBRIDDatabase, CUBRIDTable> {
 
     @Override
     protected void doClean() throws SQLException {
-        for (CUBRIDTable table : doAllTables()) {
+        for (CubridTable table : doAllTables()) {
             table.doDrop();
         }
     }
 
     @Override
-    protected CUBRIDTable[] doAllTables() throws SQLException {
+    protected CubridTable[] doAllTables() throws SQLException {
         return jdbcTemplate.queryForStringList(
                 "SELECT class_name FROM db_class WHERE class_type = 'CLASS' AND is_system_class = 'NO'"
             ).stream()
-            .map(tableName -> new CUBRIDTable(jdbcTemplate, database, this, tableName))
-            .toArray(CUBRIDTable[]::new);
+            .map(tableName -> new CubridTable(jdbcTemplate, database, this, tableName))
+            .toArray(CubridTable[]::new);
     }
 
     @Override
-    public CUBRIDTable getTable(String tableName) {
-        return new CUBRIDTable(jdbcTemplate, database, this, tableName);
+    public CubridTable getTable(String tableName) {
+        return new CubridTable(jdbcTemplate, database, this, tableName);
     }
 }

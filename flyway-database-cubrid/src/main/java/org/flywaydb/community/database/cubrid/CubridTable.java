@@ -19,7 +19,7 @@ import java.sql.SQLException;
 import org.flywaydb.core.internal.database.base.Table;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 
-public class CUBRIDTable extends Table<CUBRIDDatabase, CUBRIDSchema> {
+public class CubridTable extends Table<CubridDatabase, CubridSchema> {
 
     /**
      * @param jdbcTemplate The JDBC template for communicating with the DB.
@@ -27,7 +27,7 @@ public class CUBRIDTable extends Table<CUBRIDDatabase, CUBRIDSchema> {
      * @param schema       The schema this table lives in.
      * @param name         The name of the table.
      */
-    public CUBRIDTable(JdbcTemplate jdbcTemplate, CUBRIDDatabase database, CUBRIDSchema schema,
+    public CubridTable(JdbcTemplate jdbcTemplate, CubridDatabase database, CubridSchema schema,
         String name) {
         super(jdbcTemplate, database, schema, name);
     }

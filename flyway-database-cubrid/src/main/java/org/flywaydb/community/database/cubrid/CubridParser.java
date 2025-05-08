@@ -15,23 +15,13 @@
  */
 package org.flywaydb.community.database.cubrid;
 
-import org.flywaydb.core.internal.database.base.Connection;
+import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.internal.parser.Parser;
+import org.flywaydb.core.internal.parser.ParsingContext;
 
-public class CUBRIDConnection extends Connection<CUBRIDDatabase> {
+public class CubridParser extends Parser {
 
-    public CUBRIDConnection(CUBRIDDatabase database, java.sql.Connection connection) {
-        super(database, connection);
+    protected CubridParser(Configuration configuration, ParsingContext parsingContext) {
+        super(configuration, parsingContext, 2);
     }
-
-    @Override
-    protected String getCurrentSchemaNameOrSearchPath() {
-        // schema isn't supported
-        return null;
-    }
-
-    @Override
-    public CUBRIDSchema getSchema(String name) {
-        return new CUBRIDSchema(jdbcTemplate, database, name);
-    }
-
 }

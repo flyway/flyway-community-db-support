@@ -28,7 +28,7 @@ public class CubridDatabaseExtension implements PluginMetadata {
         try {
             return FileUtils.copyToString(
                 Objects.requireNonNull(
-                    CUBRIDDatabaseExtension.class.getClassLoader().getResourceAsStream(
+                    CubridDatabaseExtension.class.getClassLoader().getResourceAsStream(
                         "org/flywaydb/community/database/cubrid/version.txt")),
                 StandardCharsets.UTF_8);
         } catch (IOException e) {

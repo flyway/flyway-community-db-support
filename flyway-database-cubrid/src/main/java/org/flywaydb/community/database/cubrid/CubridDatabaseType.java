@@ -17,7 +17,7 @@ package org.flywaydb.community.database.cubrid;
 
 import java.sql.Connection;
 import java.sql.Types;
-import org.flywaydb.community.database.CUBRIDDatabaseExtension;
+import org.flywaydb.community.database.CubridDatabaseExtension;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -28,7 +28,7 @@ import org.flywaydb.core.internal.jdbc.StatementInterceptor;
 import org.flywaydb.core.internal.parser.Parser;
 import org.flywaydb.core.internal.parser.ParsingContext;
 
-public class CUBRIDDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
+public class CubridDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
 
     @Override
     public String getName() {
@@ -60,19 +60,19 @@ public class CUBRIDDatabaseType extends BaseDatabaseType implements CommunityDat
 
 
     @Override
-    public Database<CUBRIDConnection> createDatabase(Configuration configuration,
+    public Database<CubridConnection> createDatabase(Configuration configuration,
         JdbcConnectionFactory jdbcConnectionFactory, StatementInterceptor statementInterceptor) {
-        return new CUBRIDDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
+        return new CubridDatabase(configuration, jdbcConnectionFactory, statementInterceptor);
     }
 
     @Override
     public Parser createParser(Configuration configuration, ResourceProvider resourceProvider,
         ParsingContext parsingContext) {
-        return new CUBRIDParser(configuration, parsingContext);
+        return new CubridParser(configuration, parsingContext);
     }
 
     @Override
     public String getPluginVersion(Configuration config) {
-        return CUBRIDDatabaseExtension.readVersion();
+        return CubridDatabaseExtension.readVersion();
     }
 }
