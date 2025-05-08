@@ -22,7 +22,7 @@ import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.extensibility.PluginMetadata;
 import org.flywaydb.core.internal.util.FileUtils;
 
-public class CUBRIDDatabaseExtension implements PluginMetadata {
+public class CubridDatabaseExtension implements PluginMetadata {
 
     public static String readVersion() {
         try {
