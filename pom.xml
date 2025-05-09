@@ -42,6 +42,7 @@
         <module>flyway-database-duckdb</module>
         <module>flyway-community-db-support-archetype</module>
         <module>flyway-database-timeplus</module>
+        <module>flyway-database-questdb</module>
     </modules>
 
     <properties>
