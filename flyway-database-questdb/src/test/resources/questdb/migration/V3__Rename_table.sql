@@ -17,6 +17,4 @@
 -- limitations under the License.
 -- =========================LICENSE_END==================================
 ---
-ALTER TABLE trades ADD COLUMN venue VARCHAR;
-ALTER TABLE trades ALTER COLUMN venue TYPE SYMBOL;
-ALTER TABLE trades DROP COLUMN venue;
+RENAME TABLE trades TO trades_table;

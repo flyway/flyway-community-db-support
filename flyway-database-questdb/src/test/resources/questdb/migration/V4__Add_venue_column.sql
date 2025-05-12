@@ -17,5 +17,6 @@
 -- limitations under the License.
 -- =========================LICENSE_END==================================
 ---
-RENAME TABLE trades TO trades_table;
 RENAME TABLE trades_table TO trades;
+
+ALTER TABLE trades ADD COLUMN venue VARCHAR;
