@@ -34,7 +34,7 @@ public class QuestDBTest {
     private static final DockerImageName QUESTDB_IMAGE = DockerImageName.parse("questdb/questdb:nightly");
     private static final int HTTP_PORT = 9000;
     private static final int PG_PORT = 8812;
-    private static final String LOCATION = "classpath:questdb/migration";
+    private static final String LOCATION = "questdb_migration";
     private static final String USER = "admin";
     private static final String PWD = "quest";
 
