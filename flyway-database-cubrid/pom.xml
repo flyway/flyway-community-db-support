@@ -26,7 +26,7 @@
         <version>10.20.0</version>
     </parent>
 
-    <artifactId>flyway-database-tidb</artifactId>
+    <artifactId>flyway-database-cubrid</artifactId>
     <name>${project.artifactId}</name>
 
     <dependencies>
@@ -35,15 +35,9 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>flyway-mysql</artifactId>
-            <version>${version.flyway}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.flywaydb</groupId>
-                    <artifactId>flyway-core</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
