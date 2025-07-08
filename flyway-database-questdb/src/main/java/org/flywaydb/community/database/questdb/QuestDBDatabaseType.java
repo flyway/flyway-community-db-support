@@ -30,6 +30,9 @@ import org.flywaydb.core.internal.parser.Parser;
 import org.flywaydb.core.internal.parser.ParsingContext;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
     @Override
@@ -59,7 +62,21 @@ public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDa
 
     @Override
     public boolean handlesDatabaseProductNameAndVersion(String databaseProductName, String databaseProductVersion, Connection connection) {
-        return databaseProductName.startsWith("PostgreSQL");
+        try (PreparedStatement stmt = connection.prepareStatement("select version()");
+            ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                final String version = rs.getString(1);
+                return databaseProductName.startsWith("PostgreSQL") && version.endsWith("QuestDB");
+            }
+            throw new RuntimeException("Could not query catalog version from server");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 1;
     }
 
     @Override
