@@ -32,6 +32,7 @@ import static org.junit.Assert.*;
 
 public class QuestDBTest {
     private static final DockerImageName QUESTDB_IMAGE = DockerImageName.parse("questdb/questdb:nightly");
+    private static final long ASSERT_QUERY_TIMEOUT = 10000L;
     private static final int HTTP_PORT = 9000;
     private static final int PG_PORT = 8812;
     private static final String LOCATION = "questdb_migration";
@@ -168,13 +169,29 @@ public class QuestDBTest {
 
     private static void assertQuery(String jdbcUrl, String query, String expectedResult) throws SQLException {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, USER, PWD)) {
-            try (Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(query)) {
-                assertEquals(expectedResult, resultSetToString(resultSet));
-            }
+            final long endTime = System.currentTimeMillis() + ASSERT_QUERY_TIMEOUT;
+            String actualResult;
+            do {
+                try (Statement statement = connection.createStatement();
+                     ResultSet resultSet = statement.executeQuery(query)) {
+                    actualResult = resultSetToString(resultSet);
+                    if (expectedResult.equals(actualResult)) {
+                        return;
+                    }
+                }
+                sleep(500L);
+            } while (System.currentTimeMillis() < endTime);
+            assertEquals(expectedResult, actualResult);
         }
     }
 
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // ignore
+        }
+    }
     private static String resultSetToString(ResultSet rs) throws SQLException {
         final StringBuilder sb = new StringBuilder();
         final ResultSetMetaData metaData = rs.getMetaData();
