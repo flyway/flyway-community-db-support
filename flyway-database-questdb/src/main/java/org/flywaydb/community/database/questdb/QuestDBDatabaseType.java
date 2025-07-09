@@ -68,7 +68,7 @@ public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDa
                 final String version = rs.getString(1);
                 return databaseProductName.startsWith("PostgreSQL") && version.endsWith("QuestDB");
             }
-            throw new RuntimeException("Could not query catalog version from server");
+            throw new FlywayException("Could not query catalog version from server");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
