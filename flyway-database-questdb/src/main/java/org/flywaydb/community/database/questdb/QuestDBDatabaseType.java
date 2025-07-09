@@ -70,7 +70,7 @@ public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDa
             }
             throw new FlywayException("Could not query catalog version from server");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new FlywayException(e);
         }
     }
 
