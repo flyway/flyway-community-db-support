@@ -20,6 +20,7 @@
 package org.flywaydb.community.database.questdb;
 
 import org.flywaydb.community.database.QuestDBDatabaseExtension;
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
