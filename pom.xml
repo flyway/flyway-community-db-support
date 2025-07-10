@@ -44,6 +44,7 @@
         <module>flyway-community-db-support-archetype</module>
         <module>flyway-database-timeplus</module>
         <module>flyway-database-questdb</module>
+        <module>flyway-database-iris</module>
     </modules>
 
     <properties>
