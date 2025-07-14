@@ -63,16 +63,18 @@ public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDa
 
     @Override
     public boolean handlesDatabaseProductNameAndVersion(String databaseProductName, String databaseProductVersion, Connection connection) {
-        try (PreparedStatement stmt = connection.prepareStatement("select version()");
-            ResultSet rs = stmt.executeQuery()) {
-            if (rs.next()) {
-                final String version = rs.getString(1);
-                return databaseProductName.startsWith("PostgreSQL") && version.endsWith("QuestDB");
+        if (databaseProductName.startsWith("PostgreSQL")) {
+            try (PreparedStatement stmt = connection.prepareStatement("select version()");
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    final String version = rs.getString(1);
+                    return version.endsWith("QuestDB");
+                }
+            } catch (SQLException e) {
+                throw new FlywayException("Could not query catalog version from server");
             }
-            throw new FlywayException("Could not query catalog version from server");
-        } catch (SQLException e) {
-            throw new FlywayException(e);
         }
+        return false;
     }
 
     @Override
