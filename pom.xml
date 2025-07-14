@@ -167,5 +167,27 @@
                 </configuration>
             </plugin>
         </plugins>
-    </build>    
+    </build>
+
+    <profiles>
+        <profile>
+            <id>github</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>injected-central-publishing</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
