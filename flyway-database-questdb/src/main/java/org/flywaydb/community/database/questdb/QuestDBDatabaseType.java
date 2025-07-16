@@ -19,8 +19,8 @@
  */
 package org.flywaydb.community.database.questdb;
 
+import lombok.CustomLog;
 import org.flywaydb.community.database.QuestDBDatabaseExtension;
-import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.ResourceProvider;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.BaseDatabaseType;
@@ -35,6 +35,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@CustomLog
 public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDatabaseType {
     @Override
     public String getName() {
@@ -71,7 +72,8 @@ public class QuestDBDatabaseType extends BaseDatabaseType implements CommunityDa
                     return version.endsWith("QuestDB");
                 }
             } catch (SQLException e) {
-                throw new FlywayException("Could not query catalog version from server");
+                LOG.error("Could not query catalog version from server");
+                return false;
             }
         }
         return false;
