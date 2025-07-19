@@ -58,12 +58,30 @@ public class DuckDBSchema extends Schema<DuckDBDatabase, DuckDBTable> {
         dropAll("MACRO", getAllMacros());
         dropAll("SEQUENCE", getAllObjectsNames("sequence_name", "duckdb_sequences()"));
         dropAll("VIEW", getAllViews());
-        dropAll("TABLE", getAllTablesNames());
+
+        var tables = getAllTables();
+        while (!tables.isEmpty()) {
+            final var tablesWithoutIncomingRefs = tables.stream()
+                .filter(table -> table.incomingRefsCount == 0)
+                .map(table -> table.tableName)
+                .toList();
+            if (tablesWithoutIncomingRefs.isEmpty()) {
+                throw new IllegalStateException("""
+                    Cannot drop all tables in schema %s.
+                    Duckdb does not support DROP TABLE if the table has incoming references.
+                    All existing tables have such references.
+                    """.formatted(name)
+                );
+            }
+            dropAll("TABLE", tablesWithoutIncomingRefs);
+            tables = getAllTables();
+        }
     }
 
     @Override
     protected DuckDBTable[] doAllTables() throws SQLException {
-        return getAllTablesNames().stream()
+        return getAllTables().stream()
+            .map(table -> table.tableName)
             .map(this::getTable)
             .toList()
             .toArray(new DuckDBTable[]{});
@@ -90,8 +108,35 @@ public class DuckDBSchema extends Schema<DuckDBDatabase, DuckDBTable> {
         return jdbcTemplate.queryForStringList(sql, name);
     }
 
-    private List<String> getAllTablesNames() throws SQLException {
-        return getAllObjectsNames("table_name", "duckdb_tables()");
+    private List<Table> getAllTables() throws SQLException {
+        final var sql = """
+            SELECT
+                table_name,
+                (
+                    SELECT count(*)
+                    FROM information_schema.referential_constraints rc
+                    JOIN information_schema.key_column_usage to_column_usage
+                        ON rc.unique_constraint_name = to_column_usage.constraint_name
+                        AND rc.unique_constraint_schema = to_column_usage.constraint_schema
+                    JOIN information_schema.key_column_usage from_column_usage
+                        ON rc.constraint_name = from_column_usage.constraint_name
+                        AND rc.constraint_schema = from_column_usage.constraint_schema
+                    WHERE to_column_usage.constraint_schema = ?
+                        AND to_column_usage.table_name = tbls.table_name
+                        AND from_column_usage.table_name != tbls.table_name
+                ) AS incoming_refs_count
+            FROM duckdb_tables() tbls
+            WHERE tbls.schema_name = ?;
+        """;
+        return jdbcTemplate.query(
+            sql,
+            rs -> new Table(rs.getString("table_name"), rs.getInt("incoming_refs_count")),
+            name,
+            name
+        );
+    }
+
+    private record Table(String tableName, int incomingRefsCount) {
     }
 
     private List<String> getAllObjectsNames(String catalogNameField, String catalogTable) throws SQLException {

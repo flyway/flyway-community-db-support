@@ -28,6 +28,7 @@ import java.io.File;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,7 +64,7 @@ class DuckDBSupportTest {
         flyway.migrate();
 
         // then
-        assertThat(getAllTablesNames("main")).isEqualTo(List.of("flyway_schema_history", "some_table"));
+        assertThat(getAllTablesNames("main")).isEqualTo(Set.of("flyway_schema_history", "some_table", "some_table_2", "some_table_3"));
         assertThat(getFlywayHistoryMigrationDescriptions()).isEqualTo(List.of("first", "second"));
         assertThat(getAllViewsNames()).contains("some_view");
         assertThat(getAllMacrosNames()).contains("some_is_empty");
@@ -128,7 +129,8 @@ class DuckDBSupportTest {
 
         // then
         assertThat(getAllTablesNames("main")).isEmpty();
-        assertThat(getAllTablesNames("some_schema")).isEqualTo(List.of("flyway_schema_history", "some_table"));
+        assertThat(getAllTablesNames("some_schema")).isEqualTo(Set.of("flyway_schema_history", "some_table", "some_table_2", "some_table_3"));
+        assertThat(getAllTablesNames("some_schema")).isEqualTo(Set.of("flyway_schema_history", "some_table", "some_table_2", "some_table_3"));
     }
 
     @Test
@@ -146,7 +148,7 @@ class DuckDBSupportTest {
         flyway.baseline();
 
         // then
-        assertThat(getAllTablesNames("main")).isEqualTo(List.of("flyway_schema_history"));
+        assertThat(getAllTablesNames("main")).isEqualTo(Set.of("flyway_schema_history"));
         assertThat(getFlywayHistoryMigrationDescriptions()).isEqualTo(List.of("<< Flyway Baseline >>"));
     }
 
@@ -163,7 +165,7 @@ class DuckDBSupportTest {
         final var systemMacros = getAllMacrosNames();
 
         flyway.migrate();
-        assertThat(getAllTablesNames("main")).isEqualTo(List.of("flyway_schema_history", "some_table"));
+        assertThat(getAllTablesNames("main")).isEqualTo(Set.of("flyway_schema_history", "some_table", "some_table_2", "some_table_3"));
         assertThat(getAllViewsNames().size()).isGreaterThan(systemViews.size());
         assertThat(getAllMacrosNames().size()).isGreaterThan(systemMacros.size());
         assertThat(getAllSequencesNames()).isEqualTo(List.of("some_sequence"));
@@ -178,8 +180,8 @@ class DuckDBSupportTest {
         assertThat(getAllSequencesNames()).isEmpty();
     }
 
-    private List<String> getAllTablesNames(String schema) throws SQLException {
-        return jdbcTemplate.queryForStringList("SELECT table_name FROM duckdb_tables() WHERE schema_name = ?", schema);
+    private Set<String> getAllTablesNames(String schema) throws SQLException {
+        return Set.copyOf(jdbcTemplate.queryForStringList("SELECT table_name FROM duckdb_tables() WHERE schema_name = ?", schema));
     }
 
     private List<String> getAllViewsNames() throws SQLException {

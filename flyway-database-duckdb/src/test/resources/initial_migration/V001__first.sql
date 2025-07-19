@@ -18,11 +18,23 @@
 -- =========================LICENSE_END==================================
 ---
 CREATE TABLE ${flyway:defaultSchema}.some_table(
-    id INT,
+    id INT PRIMARY KEY,
     text VARCHAR
 );
 
 CREATE INDEX some_table_text ON ${flyway:defaultSchema}.some_table(text);
+
+-- a table with a foreign key referencing `some_table`, which makes `some_table` and edge case for drop table
+CREATE TABLE ${flyway:defaultSchema}.some_table_2(
+    id INT PRIMARY KEY,
+    some_table_id INT REFERENCES ${flyway:defaultSchema}.some_table(id)
+);
+
+-- a table with a foreign key referencing itself, which makes it an edge case for drop table
+CREATE TABLE ${flyway:defaultSchema}.some_table_3(
+    id INT PRIMARY KEY,
+    some_table_id INT REFERENCES ${flyway:defaultSchema}.some_table_3(id)
+);
 
 CREATE SEQUENCE some_sequence;
 
