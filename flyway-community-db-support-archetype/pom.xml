@@ -16,20 +16,16 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
-
   <distributionManagement>
-    <snapshotRepository>
-      <id>${snapshotRepository.id}</id>
-      <name>${snapshotRepository.name}</name>
-      <url>${snapshotRepository.url}</url>
-    </snapshotRepository>
-    <repository>
-      <id>${releaseRepository.id}</id>
-      <name>${releaseRepository.name}</name>
-      <url>${releaseRepository.url}</url>
-    </repository>
+      <repository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/flyway/flyway-community-db-support</url>
+      </repository>
+      <snapshotRepository>
+          <id>github</id>
+          <url>https://maven.pkg.github.com/flyway/flyway-community-db-support</url>
+      </snapshotRepository>
   </distributionManagement>
-
   <build>
     <plugins>
       <plugin>
