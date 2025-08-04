@@ -27,11 +27,11 @@ jobs:
         run: mvn -B install --file pom.xml
       - name: Publish to GitHub Packages Apache Maven
         if: contains(github.ref, 'main')
-        run: mvn -B deploy -Pgithub -s $GITHUB_WORKSPACE/settings.xml -pl '!flyway-community-db-support-archetype' -DskipPublishing=true
+        run: mvn -B deploy -Pgithub -s $GITHUB_WORKSPACE/settings.xml -pl '!flyway-community-db-support-archetype'
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Publish Archetype to GitHub Packages Apache Maven
         if: contains(github.ref, 'main')
-        run: mvn -B deploy -Pgithub -s $GITHUB_WORKSPACE/settings.xml -pl flyway-community-db-support-archetype -DskipPublishing=true
+        run: mvn -B deploy -Pgithub -s $GITHUB_WORKSPACE/settings.xml -pl flyway-community-db-support-archetype
         env:
           GITHUB_TOKEN: ${{ github.token }}
