@@ -192,9 +192,12 @@
                         <artifactId>central-publishing-maven-plugin</artifactId>
                         <version>0.8.0</version>
                         <extensions>true</extensions>
-                        <configuration>
-                            <publishingServerId>github</publishingServerId>
-                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>injected-central-publishing</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
