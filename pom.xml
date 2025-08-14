@@ -38,6 +38,7 @@
         <module>flyway-database-cubrid</module>
         <module>flyway-database-clickhouse</module>
         <module>flyway-database-oceanbase</module>
+        <module>flyway-database-ydb</module>
         <module>flyway-database-databricks</module>
         <module>flyway-database-db2zos</module>
         <module>flyway-database-duckdb</module>
