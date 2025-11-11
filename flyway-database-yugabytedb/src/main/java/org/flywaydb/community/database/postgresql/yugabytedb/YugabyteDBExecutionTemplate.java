@@ -86,7 +86,7 @@ public class YugabyteDBExecutionTemplate {
 
             if (!tableEntries.containsKey(tableName)) {
                 try {
-                    String now = new Timestamp(Instant.now().getEpochSecond()).toString();
+                    String now = new Timestamp(Instant.now().toEpochMilli()).toString();
                     statement.executeUpdate("INSERT INTO "
                             + YugabyteDBDatabase.LOCK_TABLE_NAME
                             + " VALUES ('" + tableName + "', 0, '" + now + "')");
