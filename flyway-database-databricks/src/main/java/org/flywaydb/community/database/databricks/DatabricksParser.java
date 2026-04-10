@@ -20,11 +20,59 @@
 package org.flywaydb.community.database.databricks;
 
 import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.internal.parser.Parser;
-import org.flywaydb.core.internal.parser.ParsingContext;
+import org.flywaydb.core.internal.parser.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 public class DatabricksParser extends Parser {
+    private static final List<String> CONDITIONALLY_CREATABLE_OBJECTS = Arrays.asList(
+            "CATALOG",
+            "CONNECTION",
+            "DATABASE",
+            "FUNCTION",
+            "SCHEMA",
+            "TABLE",
+            "VIEW",
+            "VOLUME"
+    );
+
     protected DatabricksParser(Configuration configuration, ParsingContext parsingContext) {
         super(configuration, parsingContext, 3);
+    }
+
+    @Override
+    protected void adjustBlockDepth(final ParserContext context,
+                                    final List<Token> tokens,
+                                    final Token keyword,
+                                    final PeekingReader reader
+    ) throws IOException {
+        int lastKeywordIndex = getLastKeywordIndex(tokens);
+        final Token previousKeyword = lastKeywordIndex >= 0 ? tokens.get(lastKeywordIndex) : null;
+        String keywordText = keyword.getText();
+        String previousKeywordText = previousKeyword != null ? previousKeyword.getText().toUpperCase(Locale.ENGLISH) : "";
+
+        if ("BEGIN".equalsIgnoreCase(keywordText)
+                && (reader.peekIgnoreCase(" TRANSACTION") || reader.peekIgnoreCase(" WORK"))) {
+            return;
+        }
+
+        if ("BEGIN".equalsIgnoreCase(keywordText)
+                || (("CASE".equalsIgnoreCase(keywordText)
+                    || ("IF".equalsIgnoreCase(keywordText)
+                        && !CONDITIONALLY_CREATABLE_OBJECTS.contains(previousKeywordText))
+                    || "FOR".equalsIgnoreCase(keywordText)
+                    || "WHILE".equalsIgnoreCase(keywordText)
+                    || "LOOP".equalsIgnoreCase(keywordText)
+                    || "REPEAT".equalsIgnoreCase(keywordText))
+                    && previousKeyword != null
+                    && !(lastKeywordIndex == tokens.size() - 1 && "END".equalsIgnoreCase(previousKeywordText))
+                    && !"CURSOR".equalsIgnoreCase(previousKeywordText))) {
+            context.increaseBlockDepth(keywordText);
+        } else if ("END".equalsIgnoreCase(keywordText) && context.getBlockDepth() > 0) {
+            context.decreaseBlockDepth();
+        }
     }
 }
