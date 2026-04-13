@@ -39,7 +39,7 @@ public class DatabricksParser extends Parser {
             "VOLUME"
     );
 
-    protected DatabricksParser(Configuration configuration, ParsingContext parsingContext) {
+    public DatabricksParser(Configuration configuration, ParsingContext parsingContext) {
         super(configuration, parsingContext, 3);
     }
 
