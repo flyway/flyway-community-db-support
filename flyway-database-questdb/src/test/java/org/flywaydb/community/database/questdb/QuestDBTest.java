@@ -31,7 +31,7 @@ import java.sql.*;
 import static org.junit.Assert.*;
 
 public class QuestDBTest {
-    private static final DockerImageName QUESTDB_IMAGE = DockerImageName.parse("questdb/questdb:nightly");
+    private static final DockerImageName QUESTDB_IMAGE = DockerImageName.parse("questdb/questdb:9.3.5");
     private static final long ASSERT_QUERY_TIMEOUT = 10000L;
     private static final int HTTP_PORT = 9000;
     private static final int PG_PORT = 8812;
