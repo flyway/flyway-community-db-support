@@ -12,6 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: write
       packages: write
     steps:
@@ -34,12 +35,36 @@ jobs:
           git config user.name "rg-buildmonkey"
           git config user.email "github-buildmonkey@red-gate.com"
 
+      - name: Retrieve GitHub App credentials from Vault
+        if: github.ref == 'refs/heads/main'
+        uses: hashicorp/vault-action@v3.3.0
+        id: vault
+        with:
+          method: jwt
+          path: gha_jwt
+          url: ${{ vars.VAULT_URL }}
+          role: flyway-community-db-support-gha
+          secrets: |
+            build-secrets/data/shared/gha_app_flyway_flyway app_id | APP_ID ;
+            build-secrets/data/shared/gha_app_flyway_flyway private_key | APP_PRIVATE_KEY
+
+      - name: Generate GitHub App Token
+        if: github.ref == 'refs/heads/main'
+        id: app-token
+        uses: actions/create-github-app-token@v3.1.1
+        with:
+          app-id: ${{ steps.vault.outputs.APP_ID }}
+          private-key: ${{ steps.vault.outputs.APP_PRIVATE_KEY }}
+          owner: flyway
+
       - name: Bump versions
         if: github.ref == 'refs/heads/main'
         run: |
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/flyway/flyway-community-db-support.git
+
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "")
           CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          
+
           # Manual override for major bumps
           if [ -n "$LATEST_TAG" ] && [ "$CURRENT_VERSION" != "$LATEST_TAG" ]; then
             echo "Tagging and skipping auto-bump: Version manually changed to $CURRENT_VERSION"
@@ -47,17 +72,17 @@ jobs:
             git push --tags
             exit 0
           fi
-          
+
           # Minor/patch bumping
           if [ -n "$LATEST_TAG" ] && git diff --diff-filter=ADR --name-only "$LATEST_TAG"..HEAD -- '*pom.xml' | grep -q pom.xml; then
             NEW_VERSION=$(echo "$CURRENT_VERSION" | awk -F'[.-]' '{print $1"."$2+1".0"}')
           else
             NEW_VERSION=$(echo "$CURRENT_VERSION" | awk -F'[.-]' '{print $1"."$2"."$3+1}')
           fi
-          
+
           echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION"
           mvn versions:set -DnewVersion=$NEW_VERSION
-          
+
           git add '*pom.xml'
           git commit -m "Bump Flyway Community DB Support to $NEW_VERSION"
           git tag "$NEW_VERSION"
