@@ -60,6 +60,7 @@ jobs:
       - name: Bump versions
         if: github.ref == 'refs/heads/main'
         run: |
+          git config --unset-all http.https://github.com/.extraheader
           git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/flyway/flyway-community-db-support.git
 
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "")
