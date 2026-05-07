@@ -16,25 +16,6 @@ jobs:
       contents: write
       packages: write
     steps:
-      - name: Checkout Flyway Community DB Support
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Configure Git
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git config user.name "rg-buildmonkey"
-          git config user.email "github-buildmonkey@red-gate.com"
-
       - name: Retrieve GitHub App credentials from Vault
         if: github.ref == 'refs/heads/main'
         uses: hashicorp/vault-action@v3.3.0
@@ -57,12 +38,29 @@ jobs:
           private-key: ${{ steps.vault.outputs.APP_PRIVATE_KEY }}
           owner: flyway
 
+      - name: Checkout Flyway Community DB Support
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Git
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "rg-buildmonkey"
+          git config user.email "github-buildmonkey@red-gate.com"
+
       - name: Bump versions
         if: github.ref == 'refs/heads/main'
         run: |
-          git config --unset-all http.https://github.com/.extraheader
-          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/flyway/flyway-community-db-support.git
-
           LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "")
           CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
 
