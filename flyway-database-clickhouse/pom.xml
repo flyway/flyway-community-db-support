@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-community-db-support</artifactId>
-        <version>10.25.7</version>
+        <version>10.25.8</version>
     </parent>
 
     <artifactId>flyway-database-clickhouse</artifactId>
