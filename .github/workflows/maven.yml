@@ -85,6 +85,7 @@ jobs:
 
           echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION"
           mvn versions:set -DnewVersion=$NEW_VERSION
+          mvn versions:set -DnewVersion=$NEW_VERSION -pl flyway-community-db-support-archetype
 
           git add '*pom.xml'
           git commit -m "Bump Flyway Community DB Support to $NEW_VERSION"
