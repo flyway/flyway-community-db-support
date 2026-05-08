@@ -53,6 +53,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Build with Maven
+        run: mvn -B install --file pom.xml
+
       - name: Configure Git
         if: github.ref == 'refs/heads/main'
         run: |
@@ -88,9 +91,6 @@ jobs:
           git tag "$NEW_VERSION"
           git push
           git push --tags
-
-      - name: Build with Maven
-        run: mvn -B install --file pom.xml
 
       - name: Publish to GitHub Packages Apache Maven
         if: github.ref == 'refs/heads/main'
