@@ -98,7 +98,7 @@ class CubridSupportTest {
         assertThat(countAppUserRows()).isEqualTo(2);
         assertThat(historyDescriptions()).containsExactly("create app user", "insert app users");
 
-        flyway(NEXT_MIGRATION_LOCATION).migrate();
+        flyway(INITIAL_MIGRATION_LOCATION, NEXT_MIGRATION_LOCATION).migrate();
 
         assertThat(countAppUserRows()).isEqualTo(3);
         assertThat(historyDescriptions()).containsExactly("create app user", "insert app users", "insert more app users");
@@ -147,12 +147,12 @@ class CubridSupportTest {
         assertThat(tableNames()).doesNotContain("app_user", "flyway_schema_history");
     }
 
-    private static Flyway flyway(String location) {
+    private static Flyway flyway(String... locations) {
         return Flyway.configure()
             .communityDBSupportEnabled(true)
             .dataSource(jdbcUrl(), USER_SCHEMA, "")
             .defaultSchema(USER_SCHEMA)
-            .locations(location)
+            .locations(locations)
             .load();
     }
 
