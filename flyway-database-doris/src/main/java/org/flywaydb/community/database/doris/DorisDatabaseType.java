@@ -80,14 +80,14 @@ public class DorisDatabaseType extends BaseDatabaseType implements CommunityData
         }
         try (PreparedStatement statement = connection.prepareStatement("SELECT @@version_comment");
              ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
+            if (resultSet.next()) {
                 String versionComment = resultSet.getString(1);
-                if (versionComment != null && versionComment.toLowerCase().contains("doris")) {
-                    return true;
+                if (versionComment != null) {
+                    String lower = versionComment.toLowerCase();
+                    return lower.contains("doris") || lower.contains("selectdb") || lower.contains("velodb");
                 }
             }
-        } catch (SQLException e) {
-            return false;
+        } catch (SQLException ignored) {
         }
         return false;
     }
