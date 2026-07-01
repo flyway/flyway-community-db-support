@@ -20,6 +20,8 @@
 
 package org.flywaydb.community.database.db2z;
 
+import static org.flywaydb.core.internal.parser.Parser.LOG;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +62,7 @@ public class DB2ZParser extends Parser {
     private static final StatementType DB2Z_CALL_STATEMENT = new StatementType();
     // Do not assume first line is beginning of CALL statement. Maybe comment or whitelines first...
     private static final Pattern DB2Z_CALL_WITH_PARMS_REGEX = Pattern.compile(
-            "CALL\\s+(?<procname>([^\\s]+\\.)?[^\\s]+)(\\(\\s*(?<args>\\S.*)\\s*\\))", Pattern.CASE_INSENSITIVE);
+            "^CALL\\s+(?<procname>([^\\s]+\\.)?[^\\s]+)(\\(\\s*(?<args>\\S.*)\\s*\\))$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
     //Split on comma if that comma has zero, or an even number of quotes ahead
     private static final Pattern PARMS_SPLIT_REGEX = Pattern.compile(",(?=(?:[^']*'[^']*')*[^']*$)");
@@ -83,8 +85,9 @@ public class DB2ZParser extends Parser {
                                                  int nonCommentPartPos, int nonCommentPartLine, int nonCommentPartCol,
                                                  StatementType statementType, boolean canExecuteInTransaction,
                                                  Delimiter delimiter, String sql, List<Token> tokens, boolean batchable) throws IOException {
-        LOG.debug(sql);
+        LOG.debug("createStatement: sql=" + sql);
         if (statementType == DB2Z_CALL_STATEMENT) {
+            LOG.debug("createStatement: Processing DB2Z CALL statement");
             Matcher callMatcher = DB2Z_CALL_WITH_PARMS_REGEX.matcher(sql);
             if(callMatcher.find()) {
                 String procName = callMatcher.group("procname");
@@ -109,8 +112,10 @@ public class DB2ZParser extends Parser {
                 return new DB2ZCallProcedureParsedStatement(statementPos, statementLine, statementCol,
                     sql, delimiter, canExecuteInTransaction, batchable, procName, parms);
             }
+            LOG.debug("createStatement: DB2Z CALL statement did not have parameters");
+        } else {
+            LOG.debug("createStatement: Not a DB2Z CALL statement" );
         }
-        LOG.debug("createStatement: DB2Z CALL no parms " + statementType + " " + sql);
         return super.createStatement(reader, recorder, statementPos, statementLine, statementCol,
                 nonCommentPartPos, nonCommentPartLine, nonCommentPartCol,
                 statementType, canExecuteInTransaction, delimiter, sql, tokens, batchable
