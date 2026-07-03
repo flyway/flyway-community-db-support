@@ -20,8 +20,6 @@
 
 package org.flywaydb.community.database.db2z;
 
-import static org.flywaydb.core.internal.parser.Parser.LOG;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
