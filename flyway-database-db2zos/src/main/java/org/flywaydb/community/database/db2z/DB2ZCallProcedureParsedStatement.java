@@ -53,6 +53,14 @@ public class DB2ZCallProcedureParsedStatement extends ParsedSqlStatement {
 		this.parms = parms;
     }
 
+    String getProcedureName() {
+        return procedureName;
+    }
+
+    Object[] getParms() {
+        return parms;
+    }
+
     @Override
     public Results execute(JdbcTemplate jdbcTemplate, SqlScriptExecutor sqlScriptExecutor, Configuration config) {
         Results results;

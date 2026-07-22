@@ -59,13 +59,16 @@ public class DB2ZParser extends Parser {
             "^CALL");
     private static final StatementType DB2Z_CALL_STATEMENT = new StatementType();
     // Do not assume first line is beginning of CALL statement. Maybe comment or whitelines first...
+//    private static final Pattern DB2Z_CALL_WITH_PARMS_REGEX = Pattern.compile(
+//            "^CALL\\s+(?<procname>([^\\s]+\\.)?[^\\s]+)(\\(\\s*(?<args>\\S.*)\\s*\\))$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
     private static final Pattern DB2Z_CALL_WITH_PARMS_REGEX = Pattern.compile(
-            "^CALL\\s+(?<procname>([^\\s]+\\.)?[^\\s]+)(\\(\\s*(?<args>\\S.*)\\s*\\))$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+            "()CALL\\s+(?<procname>([^\\s]+\\.)?[^\\s]+)(\\(\\s*(?<args>\\S.*)\\s*\\))", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     //Split on comma if that comma has zero, or an even number of quotes ahead
     private static final Pattern PARMS_SPLIT_REGEX = Pattern.compile(",(?=(?:[^']*'[^']*')*[^']*$)");
     private static final Pattern STRING_PARM_REGEX = Pattern.compile("'.*'");
     private static final Pattern INTEGER_PARM_REGEX = Pattern.compile("-?\\d+");
+    private static final Pattern NEWLINE_REGEX = Pattern.compile("\\R");
 
     @Override
     protected StatementType detectStatementType(String simplifiedStatement, ParserContext context, PeekingReader reader) {
@@ -86,7 +89,9 @@ public class DB2ZParser extends Parser {
         LOG.debug("createStatement: sql=" + sql);
         if (statementType == DB2Z_CALL_STATEMENT) {
             LOG.debug("createStatement: Processing DB2Z CALL statement");
-            Matcher callMatcher = DB2Z_CALL_WITH_PARMS_REGEX.matcher(sql);
+            //Remove any comment lines from the sql
+            String statementSql = NEWLINE_REGEX.split(sql, nonCommentPartLine)[nonCommentPartLine - 1];
+            Matcher callMatcher = DB2Z_CALL_WITH_PARMS_REGEX.matcher(statementSql);
             if(callMatcher.find()) {
                 String procName = callMatcher.group("procname");
                 String parmsString = callMatcher.group("args");
