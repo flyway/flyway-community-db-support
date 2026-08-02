@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-parent</artifactId>
-        <version>11.9.0</version>
+        <version>12.0.3</version>
         <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -47,7 +47,10 @@
     </modules>
 
     <properties>
-        <version.flyway>11.9.0</version.flyway>
+        <!-- TODO update to version containing changes https://github.com/flyway/flyway/issues/4164 -->
+        <version.flyway>12.0.3</version.flyway>
+        <version.surefire>3.3.1</version.surefire>
+        <version.testcontainers>1.21.0</version.testcontainers>
     </properties>
 
     <dependencyManagement>
@@ -57,6 +60,25 @@
                 <artifactId>flyway-core</artifactId>
                 <version>${version.flyway}</version>
                 <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.11.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${version.testcontainers}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${version.testcontainers}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
