@@ -86,7 +86,7 @@ public class YugabyteDBExecutionTemplate {
 
             if (!tableEntries.containsKey(tableName)) {
                 try {
-                    String now = new Timestamp(Instant.now().getEpochSecond()).toString();
+                    String now = new Timestamp(Instant.now().toEpochMilli()).toString();
                     statement.executeUpdate("INSERT INTO "
                             + YugabyteDBDatabase.LOCK_TABLE_NAME
                             + " VALUES ('" + tableName + "', 0, '" + now + "')");
@@ -116,7 +116,7 @@ public class YugabyteDBExecutionTemplate {
             if (rs.next()) {
                 lockIdRead = rs.getLong("lock_id");
                 Timestamp tsRead = rs.getTimestamp("ts");
-                String current = new Timestamp(Instant.now().getEpochSecond()).toString();
+                String current = new Timestamp(Instant.now().toEpochMilli()).toString();
                 long lockIdTtl = DEFAULT_LOCK_ID_TTL;
                 String sysProp = System.getProperty(LOCK_ID_TTL_SYS_PROP_NAME);
                 if (sysProp != null) {
@@ -128,7 +128,7 @@ public class YugabyteDBExecutionTemplate {
                     }
                 }
 
-                if (lockIdRead == 0 || Instant.now().getEpochSecond() - tsRead.getTime() > lockIdTtl) {
+                if (lockIdRead == 0 || Instant.now().toEpochMilli() - tsRead.getTime() > lockIdTtl) {
                     lockIdToBeReturned = random.nextLong();
                     if (lockIdRead == 0) {
                         LOG.debug(Thread.currentThread().getName() + "> Setting lock_id = " + lockIdToBeReturned);
