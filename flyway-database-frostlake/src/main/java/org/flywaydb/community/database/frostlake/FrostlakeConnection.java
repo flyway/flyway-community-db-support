@@ -1,0 +1,78 @@
+/*-
+ * ========================LICENSE_START=================================
+ * flyway-database-frostlake
+ * ========================================================================
+ * Copyright (C) 2010 - 2026 Red Gate Software Ltd
+ * ========================================================================
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.flywaydb.community.database.frostlake;
+
+import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.internal.database.base.Connection;
+import org.flywaydb.core.internal.database.base.Schema;
+
+import java.sql.SQLException;
+
+public class FrostlakeConnection extends Connection<FrostlakeDatabase> {
+
+    private final String originalRole;
+
+    FrostlakeConnection(final FrostlakeDatabase database, final java.sql.Connection connection) {
+        super(database, connection);
+        try {
+            this.originalRole = jdbcTemplate.queryForString("SELECT CURRENT_ROLE()");
+        } catch (SQLException e) {
+            throw new FlywayException("Unable to determine current role", e);
+        }
+    }
+
+    @Override
+    protected void doRestoreOriginalState() throws SQLException {
+        // Frostlake Native Apps can't change roles, so check the role before attempting to change it.
+        final String currentRole = jdbcTemplate.queryForString("SELECT CURRENT_ROLE()");
+        if (!originalRole.equals(currentRole)) {
+            // Reset the role to its original value in case a migration or callback changed it
+            jdbcTemplate.execute("USE ROLE " + database.doQuote(originalRole));
+        }
+    }
+
+    @Override
+    protected String getCurrentSchemaNameOrSearchPath() throws SQLException {
+        final String schemaName = jdbcTemplate.queryForString("SELECT CURRENT_SCHEMA()");
+        if (schemaName != null) {
+            return schemaName;
+        }
+        return getSchema("PUBLIC").exists() ? "PUBLIC" : null;
+    }
+
+    @Override
+    protected Schema doGetCurrentSchema() throws SQLException {
+        final String schemaName = getCurrentSchemaNameOrSearchPath();
+        return schemaName != null ? getSchema(schemaName) : null;
+    }
+
+    @Override
+    public void doChangeCurrentSchemaOrSearchPathTo(final String schema) throws SQLException {
+        if (schema == null || schema.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.execute("USE SCHEMA " + database.doQuote(schema));
+    }
+
+    @Override
+    public Schema getSchema(final String name) {
+        return new FrostlakeSchema(jdbcTemplate, database, name);
+    }
+}
