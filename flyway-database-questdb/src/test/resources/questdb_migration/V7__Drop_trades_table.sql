@@ -17,4 +17,5 @@
 -- limitations under the License.
 -- =========================LICENSE_END==================================
 ---
+-- See V3 for why `trades` is never renamed before this drop.
 DROP TABLE trades;
