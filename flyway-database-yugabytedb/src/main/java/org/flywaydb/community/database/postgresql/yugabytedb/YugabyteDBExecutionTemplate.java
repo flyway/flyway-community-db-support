@@ -82,14 +82,19 @@ public class YugabyteDBExecutionTemplate {
         long lockIdToBeReturned = 0;
         Statement statement = null;
         try {
-            statement = jdbcTemplate.getConnection().createStatement();
+            Connection connection = jdbcTemplate.getConnection();
+            statement = connection.createStatement();
 
             if (!tableEntries.containsKey(tableName)) {
                 try {
-                    String now = new Timestamp(Instant.now().getEpochSecond()).toString();
-                    statement.executeUpdate("INSERT INTO "
-                            + YugabyteDBDatabase.LOCK_TABLE_NAME
-                            + " VALUES ('" + tableName + "', 0, '" + now + "')");
+                    Timestamp now = new Timestamp(Instant.now().getEpochSecond());
+                    PreparedStatement insertStatement = connection.prepareStatement(
+                            "INSERT INTO " + YugabyteDBDatabase.LOCK_TABLE_NAME + " VALUES (?, ?, ?)");
+                    insertStatement.setString(1, tableName);
+                    insertStatement.setLong(2, 0L);
+                    insertStatement.setTimestamp(3, now);
+                    insertStatement.executeUpdate();
+                    insertStatement.close();
                     tableEntries.put(tableName, true);
                     LOG.info("insert query ts: " + now);
                     LOG.info(Thread.currentThread().getName() + "> Inserted a token row for " + tableName + " in " + YugabyteDBDatabase.LOCK_TABLE_NAME);
@@ -104,19 +109,17 @@ public class YugabyteDBExecutionTemplate {
             }
 
             long lockIdRead = 0;
-            String selectForUpdate = "SELECT lock_id, ts FROM "
-                    + YugabyteDBDatabase.LOCK_TABLE_NAME
-                    + " WHERE table_name = '"
-                    + tableName
-                    + "' FOR UPDATE";
+            PreparedStatement selectForUpdate = connection.prepareStatement(
+                    "SELECT lock_id, ts FROM " + YugabyteDBDatabase.LOCK_TABLE_NAME + " WHERE table_name = ? FOR UPDATE");
+            selectForUpdate.setString(1, tableName);
 
             statement.execute("BEGIN");
             txStarted = true;
-            ResultSet rs = statement.executeQuery(selectForUpdate);
+            ResultSet rs = selectForUpdate.executeQuery();
             if (rs.next()) {
                 lockIdRead = rs.getLong("lock_id");
                 Timestamp tsRead = rs.getTimestamp("ts");
-                String current = new Timestamp(Instant.now().getEpochSecond()).toString();
+                Timestamp current = new Timestamp(Instant.now().getEpochSecond());
                 long lockIdTtl = DEFAULT_LOCK_ID_TTL;
                 String sysProp = System.getProperty(LOCK_ID_TTL_SYS_PROP_NAME);
                 if (sysProp != null) {
@@ -135,11 +138,14 @@ public class YugabyteDBExecutionTemplate {
                     } else {
                         LOG.warn(Thread.currentThread().getName() + "> Lock with lock_id " + lockIdRead + " is held for more than " + lockIdTtl + " millis. Resetting it with lock_id " + lockIdToBeReturned);
                     }
-                    String updateLockId = "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME
-                            + " SET lock_id = " + lockIdToBeReturned + ", ts = '" + current + "' WHERE table_name = '"
-                            + tableName + "'";
-                    LOG.debug(Thread.currentThread().getName() + "> executing query " + updateLockId);
-                    statement.executeUpdate(updateLockId);
+                    PreparedStatement updateLockId = connection.prepareStatement(
+                            "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME + " SET lock_id = ?, ts = ? WHERE table_name = ?");
+                    updateLockId.setLong(1, lockIdToBeReturned);
+                    updateLockId.setTimestamp(2, current);
+                    updateLockId.setString(3, tableName);
+                    LOG.debug(Thread.currentThread().getName() + "> executing query to set lock_id = " + lockIdToBeReturned + " for table_name = " + tableName);
+                    updateLockId.executeUpdate();
+                    updateLockId.close();
                 } else {
                     LOG.debug(Thread.currentThread().getName() + "> Another Flyway operation is in progress. Allowing it to complete");
                 }
@@ -147,6 +153,7 @@ public class YugabyteDBExecutionTemplate {
                 // For some reason the record was not found, retry
                 tableEntries.remove(tableName);
             }
+            selectForUpdate.close();
 
         } catch (SQLException e) {
             LOG.debug(Thread.currentThread().getName() + "> Unable to perform lock action, SQLState: " + e.getSQLState());
@@ -174,14 +181,22 @@ public class YugabyteDBExecutionTemplate {
     private void unlock(long prevLockId, Exception rethrow) {
         Statement statement = null;
         try {
-            statement = jdbcTemplate.getConnection().createStatement();
+            Connection connection = jdbcTemplate.getConnection();
+            statement = connection.createStatement();
             statement.execute("BEGIN");
-            ResultSet rs = statement.executeQuery("SELECT lock_id FROM " + YugabyteDBDatabase.LOCK_TABLE_NAME + " WHERE table_name = '" + tableName + "' FOR UPDATE");
+            PreparedStatement selectForUpdate = connection.prepareStatement(
+                    "SELECT lock_id FROM " + YugabyteDBDatabase.LOCK_TABLE_NAME + " WHERE table_name = ? FOR UPDATE");
+            selectForUpdate.setString(1, tableName);
+            ResultSet rs = selectForUpdate.executeQuery();
 
             if (rs.next()) {
                 long lockId = rs.getLong("lock_id");
                 if (lockId == prevLockId) {
-                    statement.executeUpdate("UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME + " SET lock_id = 0 WHERE table_name = '" + tableName + "'");
+                    PreparedStatement resetLockId = connection.prepareStatement(
+                            "UPDATE " + YugabyteDBDatabase.LOCK_TABLE_NAME + " SET lock_id = 0 WHERE table_name = ?");
+                    resetLockId.setString(1, tableName);
+                    resetLockId.executeUpdate();
+                    resetLockId.close();
                 } else {
                     // Unexpected. This may happen only when callable took too long to complete
                     // and another thread forcefully reset it.
@@ -193,6 +208,7 @@ public class YugabyteDBExecutionTemplate {
                     }
                 }
             }
+            selectForUpdate.close();
         } catch (SQLException e) {
             if (rethrow == null) {
                 rethrow = new FlywaySqlException("Unable to perform unlock action for lock_id " + prevLockId, e);
