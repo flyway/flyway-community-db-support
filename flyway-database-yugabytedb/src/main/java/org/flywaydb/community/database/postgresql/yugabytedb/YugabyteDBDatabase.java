@@ -38,7 +38,11 @@ public class YugabyteDBDatabase extends PostgreSQLDatabase {
 
     public static final String LOCK_TABLE_NAME = "YB_FLYWAY_LOCK_TABLE";
     // Using table name in lower case, see https://github.com/flyway/flyway-community-db-support/issues/97
-    private static final String LOCK_TABLE_SCHEMA_SQL = "SELECT table_name, column_name FROM information_schema.columns WHERE table_name = '" + LOCK_TABLE_NAME.toLowerCase() + "'";
+    // IMPORTANT: must be scoped to the current schema (via current_schema()), otherwise this check
+    // matches a lock table belonging to ANY schema visible in information_schema.columns (e.g. one
+    // created earlier for a different schema in a multi-schema migration run), causing this method
+    // to wrongly assume the lock table already exists and skip creating it in the current schema.
+    private static final String LOCK_TABLE_SCHEMA_SQL = "SELECT table_name, column_name FROM information_schema.columns WHERE table_name = '" + LOCK_TABLE_NAME.toLowerCase() + "' AND table_schema = current_schema()";
     private static final String DROP_LOCK_TABLE_IF_EXISTS_DDL = "DROP TABLE IF EXISTS " + LOCK_TABLE_NAME;
     /**
      * This table is used to enforce locking through SELECT ... FOR UPDATE on a
