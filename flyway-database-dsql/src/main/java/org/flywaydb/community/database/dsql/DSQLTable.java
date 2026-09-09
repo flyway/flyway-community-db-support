@@ -19,28 +19,16 @@
  */
 package org.flywaydb.community.database.dsql;
 
-import lombok.CustomLog;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
 import org.flywaydb.database.postgresql.PostgreSQLSchema;
 import org.flywaydb.database.postgresql.PostgreSQLTable;
 
-import java.sql.SQLException;
-
 /**
  * Aurora DSQL table implementation for Flyway.
- *
- * <p>Skips {@code FOR UPDATE} locking: DSQL requires an equality predicate on the key,
- * which Flyway's default locking query does not provide.
  */
-@CustomLog
 public class DSQLTable extends PostgreSQLTable {
 
     public DSQLTable(JdbcTemplate jdbcTemplate, DSQLDatabase database, PostgreSQLSchema schema, String name) {
         super(jdbcTemplate, database, schema, name);
-    }
-
-    @Override
-    protected void doLock() throws SQLException {
-        LOG.debug("Skipping FOR UPDATE lock on table " + getName() + " (not supported by Aurora DSQL)");
     }
 }
