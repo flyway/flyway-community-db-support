@@ -17,4 +17,14 @@
 -- limitations under the License.
 -- =========================LICENSE_END==================================
 ---
-RENAME TABLE trades TO trades_table;
+-- The rename is exercised on its own table so that `trades` is never renamed. QuestDB's
+-- asynchronous column conversion can complete after a DROP holding an earlier table name,
+-- which re-registers the dropped table under that name and leaves a phantom behind.
+CREATE TABLE rename_source (
+    instrument SYMBOL,
+    ts TIMESTAMP
+) TIMESTAMP(ts) PARTITION BY DAY WAL;
+
+INSERT INTO rename_source (instrument, ts) values ('SYM1', '2025-05-09T00:01:00.000000Z');
+
+RENAME TABLE rename_source TO rename_target;

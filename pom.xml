@@ -28,7 +28,7 @@
 
     <artifactId>flyway-community-db-support</artifactId>
     <packaging>pom</packaging>
-    <version>10.25.16</version>
+    <version>10.26.0</version>
     <name>${project.artifactId}</name>
 
     <modules>
@@ -44,6 +44,7 @@
         <module>flyway-database-timeplus</module>
         <module>flyway-database-questdb</module>
         <module>flyway-database-iris</module>
+        <module>flyway-database-dsql</module>
         <module>flyway-database-frostlake</module>
     </modules>
 

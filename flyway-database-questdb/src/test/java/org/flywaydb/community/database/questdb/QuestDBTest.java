@@ -71,11 +71,9 @@ public class QuestDBTest {
     public void testMigration3_RenameTable() throws SQLException {
         assertMigration(
                 "3",
-                "trades_table",
-                "instrument\tside\tqty\tprice\tts\n" +
-                "SYM1\tBUY\t100.0\t12.56\t2025-05-09 00:01:00.000000\n" +
-                "SYM2\tBUY\t120.0\t10.11\t2025-05-09 00:02:00.000000\n" +
-                "SYM1\tSELL\t50.0\t12.44\t2025-05-09 00:03:00.000000\n"
+                "rename_target",
+                "instrument\tts\n" +
+                "SYM1\t2025-05-09 00:01:00.000000\n"
         );
     }
 
@@ -131,11 +129,14 @@ public class QuestDBTest {
 
     @Test
     public void testMigration7_DropTable() throws SQLException {
+        // rename_target must still be present: it proves dropping trades did not resurrect a
+        // table under an earlier name via a stale table token. See V3__Rename_table.sql.
         assertMigration(
                 "7",
                 "select table_name, designatedTimestamp, partitionBy,walEnabled from tables()",
                 "table_name\tdesignatedTimestamp\tpartitionBy\twalEnabled\n" +
-                        "flyway_schema_history\tinstalled_on\tDAY\tt\n"
+                        "flyway_schema_history\tinstalled_on\tDAY\tt\n" +
+                        "rename_target\tts\tDAY\tt\n"
         );
     }
 
