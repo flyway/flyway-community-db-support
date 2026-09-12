@@ -1,0 +1,191 @@
+/*-
+ * ========================LICENSE_START=================================
+ * flyway-database-frostlake
+ * ========================================================================
+ * Copyright (C) 2010 - 2026 Red Gate Software Ltd
+ * ========================================================================
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
+package org.flywaydb.community.database.frostlake;
+
+import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.internal.parser.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
+public class FrostlakeParser extends Parser {
+    private static final String ALTERNATIVE_QUOTE = "$$";
+    private static final String ALTERNATIVE_QUOTE_SCRIPT = "DECLARE";
+    private static final List<String> CONDITIONALLY_CREATABLE_OBJECTS = Arrays.asList("COLUMN",
+        "CONNECTION",
+        "CONSTRAINT",
+        "DATABASE",
+        "FORMAT",
+        "FUNCTION",
+        "GROUP",
+        "INDEX",
+        "INTEGRATION",
+        "PIPE",
+        "POLICY",
+        "PROCEDURE",
+        "ROLE",
+        "SCHEMA",
+        "SEQUENCE",
+        "STAGE",
+        "STREAM",
+        "TABLE",
+        "TAG",
+        "TASK",
+        "USER",
+        "VIEW",
+        "WAREHOUSE",
+        "MONITOR",
+        "COMMENT",
+        "STREAMLIT");
+
+    public FrostlakeParser(final Configuration configuration, final ParsingContext parsingContext) {
+        super(configuration, parsingContext, 9);
+    }
+
+    @Override
+    protected boolean isAlternativeStringLiteral(final String peek) {
+        if (peek.startsWith(ALTERNATIVE_QUOTE) || peek.toUpperCase(Locale.ROOT)
+            .startsWith(ALTERNATIVE_QUOTE_SCRIPT + " ") || peek.toUpperCase(Locale.ROOT)
+            .startsWith(ALTERNATIVE_QUOTE_SCRIPT + "\n") || peek.toUpperCase(Locale.ROOT)
+            .startsWith(ALTERNATIVE_QUOTE_SCRIPT + ";")) {
+            return true;
+        }
+        return super.isAlternativeStringLiteral(peek);
+    }
+
+    @Override
+    protected Token handleStringLiteral(final PeekingReader reader,
+        final ParserContext context,
+        final int pos,
+        final int line,
+        final int col) throws IOException {
+        reader.swallow();
+        reader.swallowUntilIncludingWithEscape('\'', true, '\\');
+        return new Token(TokenType.STRING, pos, line, col, null, null, context.getParensDepth());
+    }
+
+    @Override
+    protected Token handleAlternativeStringLiteral(final PeekingReader reader,
+        final ParserContext context,
+        final int pos,
+        final int line,
+        final int col) throws IOException {
+        String alternativeQuoteOpen = ALTERNATIVE_QUOTE;
+        String alternativeQuoteEnd = ALTERNATIVE_QUOTE;
+
+        final String text;
+        if (reader.peek(ALTERNATIVE_QUOTE_SCRIPT)) {
+            alternativeQuoteOpen = "BEGIN";
+            alternativeQuoteEnd = "END";
+            reader.swallowUntilExcluding(alternativeQuoteOpen);
+            text = readBetweenRecursive(reader,
+                alternativeQuoteOpen,
+                alternativeQuoteEnd,
+                context.getDelimiter().toString().charAt(0));
+        } else {
+            reader.swallow(alternativeQuoteOpen.length());
+            text = reader.readUntilExcluding(alternativeQuoteOpen, alternativeQuoteEnd);
+            reader.swallow(alternativeQuoteEnd.length());
+        }
+
+        return new Token(TokenType.STRING, pos, line, col, text, text, context.getParensDepth());
+    }
+
+    @Override
+    protected void adjustBlockDepth(final ParserContext context,
+        final List<Token> tokens,
+        final Token keyword,
+        final PeekingReader reader) throws IOException {
+        final int lastKeywordIndex = getLastKeywordIndex(tokens);
+        final Token previousKeyword = lastKeywordIndex >= 0 ? tokens.get(lastKeywordIndex) : null;
+        final String keywordText = keyword.getText();
+        final String previousKeywordText = previousKeyword != null ? previousKeyword.getText()
+            .toUpperCase(Locale.ENGLISH) : "";
+
+        if ("BEGIN".equalsIgnoreCase(keywordText) && (reader.peekIgnoreCase(" TRANSACTION") || reader.peekIgnoreCase(
+            context.getDelimiter().toString()) || reader.peekIgnoreCase(" WORK") || reader.peekIgnoreCase(" NAME"))) {
+            return; //Beginning a transaction shouldn't increase block depth
+        }
+
+        if ("BEGIN".equalsIgnoreCase(keywordText) || ((("IF".equalsIgnoreCase(keywordText)
+            && !CONDITIONALLY_CREATABLE_OBJECTS.contains(previousKeywordText))
+            // excludes the IF in eg. CREATE TABLE IF EXISTS
+            || "FOR".equalsIgnoreCase(keywordText) || "CASE".equalsIgnoreCase(keywordText))
+            && previousKeyword != null
+            && !"END".equalsIgnoreCase(previousKeywordText)
+            && !"CURSOR".equalsIgnoreCase(previousKeywordText))) {  // DECLARE CURSOR FOR SELECT ... has no END
+            context.increaseBlockDepth(keywordText);
+        } else if (("EACH".equalsIgnoreCase(keywordText) || "SQLEXCEPTION".equalsIgnoreCase(keywordText))
+            && previousKeyword != null
+            && "FOR".equalsIgnoreCase(previousKeywordText)
+            && context.getBlockDepth() > 0) {
+            context.decreaseBlockDepth();
+        } else if ("END".equalsIgnoreCase(keywordText) && context.getBlockDepth() > 0) {
+            context.decreaseBlockDepth();
+        }
+    }
+
+    @Override
+    protected boolean isSingleLineComment(final String peek, final ParserContext context, final int col) {
+        return peek.startsWith("--") || peek.startsWith("//");
+    }
+
+    private String readBetweenRecursive(final PeekingReader reader,
+        final String prefix,
+        final String suffix,
+        final char delimiter) throws IOException {
+        final StringBuilder result = new StringBuilder();
+        reader.swallow(prefix.length());
+        while (true) {
+            if (reader.peekIgnoreCase("END IF")
+                || reader.peekIgnoreCase("END FOR")
+                || reader.peekIgnoreCase("END CASE")) {
+                result.append(reader.readUntilIncluding(delimiter));
+                result.append(reader.readUntilExcluding(prefix, suffix));
+                continue;
+            }
+            if (reader.peek(suffix)) {
+                final String peekAhead = reader.peek(suffix.length() + 5);
+                if (peekAhead != null && peekAhead.length() > suffix.length()) {
+                    final String afterEnd = peekAhead.substring(suffix.length()).trim().toUpperCase(Locale.ROOT);
+                    if (afterEnd.startsWith("IF") || afterEnd.startsWith("FOR") || afterEnd.startsWith("CASE")) {
+                        result.append(reader.readUntilIncluding(delimiter));
+                        continue;
+                    }
+                }
+                break;
+            }
+
+            final String content = reader.readUntilExcluding(prefix, suffix);
+            if (content.isEmpty()) {
+                break;
+            }
+            result.append(content);
+
+            if (reader.peek(prefix)) {
+                result.append(prefix).append(readBetweenRecursive(reader, prefix, suffix, delimiter)).append(suffix);
+            }
+        }
+        reader.swallow(suffix.length());
+        return result.toString();
+    }
+}
