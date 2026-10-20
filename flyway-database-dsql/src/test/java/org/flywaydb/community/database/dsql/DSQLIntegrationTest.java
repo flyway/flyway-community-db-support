@@ -280,6 +280,69 @@ class DSQLIntegrationTest {
         }
     }
 
+    @Test
+    void migrateChecksExistingIndexWhenIfNotExistsSkips() throws Exception {
+        // A rerun with IF NOT EXISTS over indexes created outside Flyway. async_idx_ine_ok is
+        // fully built before migrate, so its migration always takes the valid-index branch.
+        // async_idx_ine_bad is a UNIQUE index over duplicate values whose build is still running
+        // or has already failed, so its migration always waits on that existing job and fails.
+        // Both builds are submitted before waiting on the first, to keep the test short.
+        String idxTable = SCHEMA + ".async_idx_ine";
+        // Over 63 bytes, so DSQL stores the name shortened.
+        String okIndex = "async_idx_ine_ok_" + "a".repeat(60);
+        String badJobId;
+        try (Connection c = open(); Statement s = c.createStatement()) {
+            c.setAutoCommit(true);
+            s.execute("DROP TABLE IF EXISTS " + idxTable);
+            s.execute("CREATE TABLE " + idxTable + " (id int PRIMARY KEY, val int)");
+            // Two rows sharing val = 1 make a UNIQUE index on val impossible.
+            s.execute("INSERT INTO " + idxTable + " (id, val) VALUES (1, 1), (2, 1)");
+            String okJobId = jobIdOf(s, "CREATE INDEX ASYNC " + okIndex + " ON " + idxTable + " (id)");
+            badJobId = jobIdOf(s, "CREATE UNIQUE INDEX ASYNC async_idx_ine_bad ON " + idxTable + " (val)");
+            try (ResultSet rs = s.executeQuery("CALL sys.wait_for_job('" + okJobId + "')")) {
+                assertThat(rs.next() && rs.getBoolean(1)).isTrue();
+            }
+        }
+
+        try {
+            java.nio.file.Path dir = java.nio.file.Files.createTempDirectory("dsql-async-idx-ine");
+            java.nio.file.Files.writeString(dir.resolve("V1__ok_index_exists.sql"),
+                    "CREATE INDEX ASYNC IF NOT EXISTS " + okIndex + " ON " + idxTable + " (id);\n");
+            java.nio.file.Files.writeString(dir.resolve("V2__invalid_index_exists.sql"),
+                    "CREATE UNIQUE INDEX ASYNC IF NOT EXISTS async_idx_ine_bad ON " + idxTable + " (val);\n");
+
+            FluentConfiguration config = Flyway.configure()
+                    .dataSource(jdbcUrl(), user(), null)
+                    .schemas(SCHEMA)
+                    .baselineOnMigrate(true)
+                    .baselineVersion("0")
+                    .locations("filesystem:" + dir.toAbsolutePath());
+            config.getPluginRegister().getPlugin(DSQLConfigurationExtension.class)
+                    .setAwaitAsyncIndexes(true);
+            Flyway flyway = config.load();
+
+            // The async_idx_ine_bad migration fails on the existing build's job, proving the wait
+            // used it.
+            assertThatThrownBy(flyway::migrate)
+                    .hasMessageContaining("did not succeed")
+                    .hasMessageContaining(badJobId);
+            // The async_idx_ine_ok migration accepted the valid index; the other did not apply.
+            assertThat(appliedVersions()).contains("1").doesNotContain("2");
+        } finally {
+            try (Connection c = open(); Statement s = c.createStatement()) {
+                c.setAutoCommit(true);
+                s.execute("DROP TABLE IF EXISTS " + idxTable);
+            }
+        }
+    }
+
+    private static String jobIdOf(Statement s, String createIndexAsync) throws Exception {
+        try (ResultSet rs = s.executeQuery(createIndexAsync)) {
+            assertThat(rs.next()).isTrue();
+            return rs.getString("job_id");
+        }
+    }
+
     /**
      * A transactional Java migration that induces a commit-time OCC conflict on its first attempt.
      * It writes row 1 on Flyway's connection, then — only on attempt 1 — commits a conflicting

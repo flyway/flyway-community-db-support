@@ -24,6 +24,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.internal.jdbc.Result;
 import org.flywaydb.core.internal.jdbc.Results;
+import org.flywaydb.core.internal.jdbc.WarningImpl;
 import org.flywaydb.core.internal.sqlscript.SqlScript;
 import org.flywaydb.core.internal.sqlscript.SqlScriptExecutor;
 import org.junit.jupiter.api.Test;
@@ -33,15 +34,20 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 class DSQLSqlScriptExecutorTest {
 
@@ -65,6 +71,14 @@ class DSQLSqlScriptExecutorTest {
         private boolean emptyResultSet = false;
         // Simulate the finally-block restore (setAutoCommit(false)) failing.
         private boolean raiseOnRestore = false;
+        // Existing-index lookup issued for a skipped IF NOT EXISTS: the bound (table, index name)
+        // parameters, and the row it returns (no row when existingIndexFound is false).
+        final Map<Integer, String> lookupParams = new HashMap<>();
+        private boolean existingIndexFound = false;
+        private boolean existingIndexValid = false;
+        private String existingIndexJobId = null;
+        // Simulate the existing-index lookup itself raising.
+        private boolean raiseOnLookup = false;
 
         // Defaults to a successful build so existing tests (which only assert the CALL was issued)
         // keep passing against the success result set.
@@ -105,10 +119,54 @@ class DSQLSqlScriptExecutorTest {
                         preparedCalls.add((String) args[0]);
                         autoCommitAtPrepareCall = autoCommit;
                         return callableStatementProxy();
+                    case "prepareStatement":
+                        return lookupStatementProxy();
                     default:
                         return defaultReturn(method);
                 }
             };
+        }
+
+        private PreparedStatement lookupStatementProxy() {
+            InvocationHandler h = (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "setString":
+                        lookupParams.put((Integer) args[0], (String) args[1]);
+                        return null;
+                    case "executeQuery":
+                        if (raiseOnLookup) {
+                            throw new SQLException("simulated lookup failure");
+                        }
+                        return lookupResultSetProxy();
+                    default:
+                        return defaultReturn(method);
+                }
+            };
+            return (PreparedStatement) Proxy.newProxyInstance(
+                    getClass().getClassLoader(), new Class<?>[]{PreparedStatement.class}, h);
+        }
+
+        // Single (indisvalid, job_id) row, or no row when the index was not found.
+        private ResultSet lookupResultSetProxy() {
+            boolean[] advanced = {false};
+            InvocationHandler h = (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "next":
+                        if (!existingIndexFound || advanced[0]) return Boolean.FALSE;
+                        advanced[0] = true;
+                        return Boolean.TRUE;
+                    case "getBoolean":
+                        if ((Integer) args[0] != 1) throw new SQLException("indisvalid is column 1");
+                        return existingIndexValid;
+                    case "getString":
+                        if ((Integer) args[0] != 2) throw new SQLException("job_id is column 2");
+                        return existingIndexJobId;
+                    default:
+                        return defaultReturn(method);
+                }
+            };
+            return (ResultSet) Proxy.newProxyInstance(
+                    getClass().getClassLoader(), new Class<?>[]{ResultSet.class}, h);
         }
 
         private CallableStatement callableStatementProxy() {
@@ -184,6 +242,19 @@ class DSQLSqlScriptExecutorTest {
         return new Result(updateCount, emptyList(), emptyList(), sql);
     }
 
+    // What DSQL returns for a skipped IF NOT EXISTS: the job_id column with no rows.
+    private static Result skippedIfNotExistsResult(String sql) {
+        return new Result(0L, singletonList("job_id"), emptyList(), sql);
+    }
+
+    // A skipped IF NOT EXISTS result together with the 42P07 notice DSQL issues for it.
+    private static Results skippedWithNotice(String indexName, String sql) {
+        Results r = resultsOf(skippedIfNotExistsResult(sql));
+        r.addWarning(new WarningImpl(0, "42P07",
+                "relation \"" + indexName + "\" already exists, skipping"));
+        return r;
+    }
+
     // A Configuration whose dsql extension has awaitAsyncIndexes set as given. FluentConfiguration
     // auto-registers the extension via ServiceLoader, so the wait gate reads the flag from here.
     private static Configuration configWithAwait(boolean await) {
@@ -250,8 +321,164 @@ class DSQLSqlScriptExecutorTest {
                 new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy());
 
         assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
-                .isInstanceOf(FlywayException.class);
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("no job_id was found");
         assertThat(conn.preparedCalls).isEmpty();
+        assertThat(conn.lookupParams).isEmpty();
+    }
+
+    @Test
+    void acceptsValidExistingIndexWhenIfNotExistsSkips() {
+        // Skipped because the index exists and is valid: nothing to wait on, even though its
+        // completed build is still listed. Keywords match in any case; the unquoted index name
+        // (digits included) is folded to lower case.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        conn.existingIndexValid = true;
+        conn.existingIndexJobId = "job-done";
+        Results results = resultsOf(skippedIfNotExistsResult(
+                "create index async if not exists Idx_Val2 on orders(customer_id)"));
+        new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy())
+                .execute(null, configWithAwait(true));
+        assertThat(conn.lookupParams).containsOnly(entry(1, "orders"), entry(2, "idx_val2"));
+        assertThat(conn.preparedCalls).isEmpty();
+    }
+
+    @Test
+    void waitsForExistingBuildWhenIfNotExistsSkips() {
+        // Skipped while the existing index is still building: wait on that build's job. The
+        // comments, which Flyway keeps in the SQL, must not hide the IF NOT EXISTS match. A later
+        // CREATE INDEX ASYNC cannot change what the unqualified table refers to, so it still runs.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        conn.existingIndexJobId = "job-existing";
+        List<Results> script = Arrays.asList(
+                resultsOf(skippedIfNotExistsResult(
+                        "-- rerun\nCREATE INDEX ASYNC IF /* c */ NOT EXISTS idx ON orders(customer_id)")),
+                resultsOf(asyncIndexResult("job-later", "CREATE INDEX ASYNC idx2 ON orders(x)")));
+        new DSQLSqlScriptExecutor(new FakeDelegate(script), conn.proxy())
+                .execute(null, configWithAwait(true));
+        assertThat(conn.boundJobIds).containsExactly("job-existing", "job-later");
+    }
+
+    @Test
+    void failsWhenIfNotExistsSkipsInvalidIndexWithNoJob() {
+        // Skipped over an INVALID index whose failed build has been purged from sys.jobs.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        Results results = skippedWithNotice("idx",
+                "CREATE INDEX ASYNC IF NOT EXISTS idx ON orders(customer_id)");
+        DSQLSqlScriptExecutor executor =
+                new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy());
+
+        assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("is INVALID from an earlier failed build")
+                .hasMessageContaining("(DSQL: relation \"idx\" already exists, skipping)");
+        assertThat(conn.preparedCalls).isEmpty();
+    }
+
+    @Test
+    void failsWhenIfNotExistsSkipsButNoSuchIndexOnTable() {
+        // Skipped because the name belongs to another relation (e.g. a table): no index was made.
+        // DSQL's own skip notice is carried into the message.
+        RecordingConnection conn = new RecordingConnection();
+        Results results = skippedWithNotice("orders_lookup",
+                "CREATE INDEX ASYNC IF NOT EXISTS orders_lookup ON orders(customer_id)");
+        DSQLSqlScriptExecutor executor =
+                new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy());
+
+        assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("already used by another object")
+                .hasMessageContaining("(DSQL: relation \"orders_lookup\" already exists, skipping)");
+        assertThat(conn.preparedCalls).isEmpty();
+    }
+
+    @Test
+    void waitsOnReturnedJobForFreshIfNotExists() {
+        // Not skipped: IF NOT EXISTS created the index and returned a job_id, so the wait uses
+        // it directly and the existing-index lookup must not run.
+        RecordingConnection conn = new RecordingConnection();
+        Results results = resultsOf(asyncIndexResult("job-new",
+                "CREATE INDEX ASYNC IF NOT EXISTS idx ON orders(customer_id)"));
+        new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy())
+                .execute(null, configWithAwait(true));
+        assertThat(conn.boundJobIds).containsExactly("job-new");
+        assertThat(conn.lookupParams).isEmpty();
+    }
+
+    @Test
+    void failsWhenExistingIndexLookupRaises() {
+        // A failed lookup must fail the migration, not be read as "nothing to wait on".
+        RecordingConnection conn = new RecordingConnection();
+        conn.raiseOnLookup = true;
+        Results results = resultsOf(skippedIfNotExistsResult(
+                "CREATE INDEX ASYNC IF NOT EXISTS idx ON orders(customer_id)"));
+        DSQLSqlScriptExecutor executor =
+                new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy());
+
+        assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("failed to check the existing index")
+                .hasCauseInstanceOf(SQLException.class);
+        assertThat(conn.preparedCalls).isEmpty();
+    }
+
+    @Test
+    void looksUpQuotedSchemaQualifiedNamesWhenIfNotExistsSkips() {
+        // The table reference is passed through as written (resolved by ::regclass); a quoted
+        // index name keeps its case with "" unescaped. Comment markers inside quoted names are
+        // kept. A schema-qualified table resolves the same whatever later statements do, so a
+        // later SET does not block the check.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        conn.existingIndexValid = true;
+        List<Results> script = Arrays.asList(
+                resultsOf(skippedIfNotExistsResult("CREATE UNIQUE INDEX ASYNC IF /* actual comment */ NOT EXISTS"
+                        + " \"My\"\"Idx/*archive*/\" ON app.\"Orders--archive\" (customer_id)")),
+                resultsOf(plainResult(0L, "SET search_path TO other")));
+        new DSQLSqlScriptExecutor(new FakeDelegate(script), conn.proxy())
+                .execute(null, configWithAwait(true));
+        assertThat(conn.lookupParams)
+                .containsOnly(entry(1, "app.\"Orders--archive\""), entry(2, "My\"Idx/*archive*/"));
+    }
+
+    @Test
+    void failsClosedWhenUnqualifiedTableIsFollowedByAnotherStatement() {
+        // The check runs after the script; a later SET search_path (or any other non-index
+        // statement) could point the unqualified "orders" at a different table, so fail closed.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        conn.existingIndexValid = true;
+        List<Results> script = Arrays.asList(
+                resultsOf(skippedIfNotExistsResult(
+                        "CREATE INDEX ASYNC IF NOT EXISTS idx ON orders(customer_id)")),
+                resultsOf(plainResult(0L, "SET search_path TO other")));
+        DSQLSqlScriptExecutor executor =
+                new DSQLSqlScriptExecutor(new FakeDelegate(script), conn.proxy());
+
+        assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("Schema-qualify the table");
+        assertThat(conn.lookupParams).isEmpty();
+    }
+
+    @Test
+    void failsClosedWhenIfNotExistsTableCannotBeParsed() {
+        // "tablé" must not be cut to "tabl" and checked as another table: no lookup, missingJobId.
+        RecordingConnection conn = new RecordingConnection();
+        conn.existingIndexFound = true;
+        conn.existingIndexValid = true;
+        Results results = resultsOf(skippedIfNotExistsResult(
+                "CREATE INDEX ASYNC IF NOT EXISTS idx_x ON tablé (c)"));
+        DSQLSqlScriptExecutor executor =
+                new DSQLSqlScriptExecutor(new FakeDelegate(singletonList(results)), conn.proxy());
+
+        assertThatThrownBy(() -> executor.execute(null, configWithAwait(true)))
+                .isInstanceOf(FlywayException.class)
+                .hasMessageContaining("no job_id was found");
+        assertThat(conn.lookupParams).isEmpty();
     }
 
     @Test

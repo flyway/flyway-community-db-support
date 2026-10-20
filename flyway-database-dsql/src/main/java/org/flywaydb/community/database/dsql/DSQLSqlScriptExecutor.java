@@ -21,6 +21,7 @@ package org.flywaydb.community.database.dsql;
 
 import lombok.CustomLog;
 import org.flywaydb.core.api.FlywayException;
+import org.flywaydb.core.api.callback.Warning;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.jdbc.Result;
 import org.flywaydb.core.internal.jdbc.Results;
@@ -29,9 +30,12 @@ import org.flywaydb.core.internal.sqlscript.SqlScriptExecutor;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -51,8 +55,15 @@ import java.util.regex.Pattern;
  *
  * <p>A failed build leaves an {@code INVALID} index in place (the DSQL docs recommend dropping and
  * recreating it); the migration fails without dropping it, since a timed-out wait may front a build
- * that still succeeds. A rerun must drop it first — {@code IF NOT EXISTS} can silently accept the
- * {@code INVALID} index.
+ * that still succeeds. A rerun must drop it first.
+ *
+ * <p>{@code CREATE INDEX ASYNC IF NOT EXISTS} returns no {@code job_id} when it is skipped because
+ * the name is already taken. The existing index on the named table is then checked instead: a
+ * valid index passes, one still building is awaited through its {@code sys.jobs} entry, and an
+ * {@code INVALID} one (or no such index, e.g. the name belongs to a table) fails the migration.
+ * The check runs after the whole script, so an unqualified table is only checked when every later
+ * statement is a {@code CREATE INDEX ASYNC}; any other later statement could change which table
+ * the name refers to, so the migration fails and asks for a schema-qualified table instead.
  *
  * <p>Opt-in, off by default: the wait fires only when {@code flyway.dsql.awaitAsyncIndexes} is
  * enabled. When disabled (the default), the decorator is a pass-through that returns the
@@ -70,6 +81,30 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
     private static final Pattern CREATE_INDEX_ASYNC = Pattern.compile(
             "^\\s*CREATE\\s+(UNIQUE\\s+)?INDEX\\s+ASYNC\\b", Pattern.CASE_INSENSITIVE);
 
+    // A quoted ("..." with "" escapes) or unquoted ASCII SQL identifier.
+    private static final String IDENT = "(?:\"(?:[^\"]|\"\")+\"|[A-Za-z_][A-Za-z0-9_$]*)";
+
+    // Captures the index name and the (optionally schema-qualified) table of an IF NOT EXISTS
+    // statement, so a skipped statement can be checked against the index that already exists.
+    // Group 3 is set only for a schema-qualified table. The table must be followed by its column
+    // list, so a partial match fails closed.
+    private static final Pattern CREATE_INDEX_ASYNC_IF_NOT_EXISTS = Pattern.compile(
+            "^\\s*CREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+ASYNC\\s+IF\\s+NOT\\s+EXISTS\\s+(" + IDENT
+                    + ")\\s+ON\\s+(" + IDENT + "(\\." + IDENT + ")?)(?=\\s*\\()",
+            Pattern.CASE_INSENSITIVE);
+
+    // Validity of the named index on the named table, plus the job_id of its latest build (null
+    // once sys.jobs has purged it). No row means no such index exists on that table.
+    // Cast to name so an index name over 63 bytes is shortened as DSQL shortened it.
+    private static final String EXISTING_INDEX_QUERY =
+            "SELECT i.indisvalid, (SELECT j.job_id FROM sys.jobs j WHERE j.object_id = i.indexrelid"
+                    + " ORDER BY j.start_time DESC LIMIT 1)"
+                    + " FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid"
+                    + " WHERE i.indrelid = ?::regclass AND c.relname = ?::name";
+
+    // SQLSTATE of the notice DSQL issues when IF NOT EXISTS skips a statement.
+    private static final String RELATION_EXISTS_STATE = "42P07";
+
     private static final String JOB_ID_COLUMN = "job_id";
 
     private final SqlScriptExecutor delegate;
@@ -86,6 +121,22 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
         if (!awaitAsyncIndexesEnabled(configuration)) {
             return resultsList;
         }
+        // Position of the last statement that is not a CREATE INDEX ASYNC, for the unqualified-
+        // table check in asyncIndexJobId.
+        int lastOther = -1;
+        int pos = 0;
+        for (Results results : resultsList) {
+            if (results == null) {
+                continue;
+            }
+            for (Result result : results.getResults()) {
+                if (!isCreateIndexAsync(stripComments(result.sql()))) {
+                    lastOther = pos;
+                }
+                pos++;
+            }
+        }
+        pos = 0;
         for (Results results : resultsList) {
             // Flyway 11.9 adds a null Results when flushing an empty batch around an unbatchable
             // statement (CREATE INDEX ASYNC under flyway.batch=true).
@@ -93,13 +144,18 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
                 continue;
             }
             for (Result result : results.getResults()) {
-                String jobId = asyncIndexJobId(result);
+                String jobId = asyncIndexJobId(result, results.getWarnings(), lastOther > pos);
                 if (jobId != null) {
                     waitForJob(jobId);
                 }
+                pos++;
             }
         }
         return resultsList;
+    }
+
+    private static boolean isCreateIndexAsync(String strippedSql) {
+        return strippedSql != null && CREATE_INDEX_ASYNC.matcher(strippedSql).find();
     }
 
     /**
@@ -116,16 +172,44 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
         return ext != null && ext.isAwaitAsyncIndexes();
     }
 
-    /** Returns the async-index {@code job_id} for this result, or null if it is not one. */
-    private static String asyncIndexJobId(Result result) {
+    /**
+     * Returns the {@code job_id} to wait on for this result, or null if there is nothing to wait
+     * on (not an async-index statement, or a skipped IF NOT EXISTS over a valid index).
+     * {@code laterOtherStatement} is whether a statement other than CREATE INDEX ASYNC follows it
+     * in the script; such a statement could change which table an unqualified name refers to by
+     * the time the check runs.
+     */
+    private String asyncIndexJobId(Result result, List<Warning> warnings,
+                                   boolean laterOtherStatement) {
         String sql = stripComments(result.sql());
-        if (sql == null || !CREATE_INDEX_ASYNC.matcher(sql).find()) {
+        if (!isCreateIndexAsync(sql)) {
             return null;
         }
+        String jobId = jobIdColumnValue(result);
+        if (jobId != null) {
+            return jobId;
+        }
+        Matcher ifNotExists = CREATE_INDEX_ASYNC_IF_NOT_EXISTS.matcher(sql);
+        if (ifNotExists.find()) {
+            String indexName = ifNotExists.group(1);
+            String table = ifNotExists.group(2);
+            if (ifNotExists.group(3) == null && laterOtherStatement) {
+                throw new FlywayException("Aurora DSQL index " + indexName + " on " + table
+                        + " cannot be checked: IF NOT EXISTS skipped it" + skipNotice(warnings)
+                        + ", and a later statement in this script may change which table " + table
+                        + " refers to. Schema-qualify the table.");
+            }
+            return existingIndexJobId(sql, indexName, table, warnings);
+        }
+        throw missingJobId(sql);
+    }
+
+    /** Returns the first row's {@code job_id} value, or null if the result carries none. */
+    private static String jobIdColumnValue(Result result) {
         List<String> columns = result.columns();
         List<List<String>> data = result.data();
         if (columns == null || data == null || data.isEmpty()) {
-            throw missingJobId(sql);
+            return null;
         }
         int idx = -1;
         for (int i = 0; i < columns.size(); i++) {
@@ -136,13 +220,68 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
         }
         List<String> firstRow = data.get(0);
         if (idx < 0 || idx >= firstRow.size()) {
-            throw missingJobId(sql);
+            return null;
         }
         String jobId = firstRow.get(idx);
-        if (jobId == null || jobId.isEmpty()) {
-            throw missingJobId(sql);
+        return (jobId == null || jobId.isEmpty()) ? null : jobId;
+    }
+
+    /**
+     * Checks the index a skipped IF NOT EXISTS left in place: returns null when it is valid,
+     * the job_id of its build when it is not yet valid (waitForJob then passes or fails on the
+     * build's outcome), and fails when it is INVALID with no build left to wait on, or when no
+     * index of that name exists on the table (the name belongs to another relation).
+     */
+    private String existingIndexJobId(String sql, String indexName, String table,
+                                      List<Warning> warnings) {
+        try (PreparedStatement ps = connection.prepareStatement(EXISTING_INDEX_QUERY)) {
+            ps.setString(1, table);
+            ps.setString(2, unquoteIdentifier(indexName));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new FlywayException("Aurora DSQL index " + indexName + " was not created on "
+                            + table + ": IF NOT EXISTS skipped it because the name is already used by"
+                            + " another object" + skipNotice(warnings) + ". Use a different index name.");
+                }
+                if (rs.getBoolean(1)) {
+                    LOG.debug("Aurora DSQL async index already exists and is valid: " + sql);
+                    return null;
+                }
+                String jobId = rs.getString(2);
+                if (jobId == null) {
+                    throw new FlywayException("Aurora DSQL index " + indexName + " on " + table
+                            + " is INVALID from an earlier failed build, so IF NOT EXISTS cannot reuse"
+                            + " it" + skipNotice(warnings) + ". Drop the index and rerun.");
+                }
+                return jobId;
+            }
+        } catch (SQLException e) {
+            throw new FlywayException("Aurora DSQL async index build could not be awaited: failed "
+                    + "to check the existing index for: " + sql, e);
         }
-        return jobId;
+    }
+
+    /**
+     * Formats DSQL's own skip notice (SQLSTATE 42P07, "relation ... already exists, skipping") for
+     * an error message, or returns "" when the statement carried none.
+     */
+    private static String skipNotice(List<Warning> warnings) {
+        if (warnings != null) {
+            for (Warning warning : warnings) {
+                if (RELATION_EXISTS_STATE.equals(warning.getState())) {
+                    return " (DSQL: " + warning.getMessage() + ")";
+                }
+            }
+        }
+        return "";
+    }
+
+    /** Folds an unquoted identifier to lower case; unquotes a quoted one ("" becomes "). */
+    private static String unquoteIdentifier(String ident) {
+        if (ident.startsWith("\"")) {
+            return ident.substring(1, ident.length() - 1).replace("\"\"", "\"");
+        }
+        return ident.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -161,6 +300,8 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
      * comment with a single space, so a comment cannot hide the {@code CREATE INDEX ASYNC} keywords
      * whether it precedes them or sits between them. Flyway retains such comments in
      * {@link Result#sql()}. Each comment becomes a space (not nothing) to keep keyword boundaries.
+     * Quoted identifiers are copied as is, so comment markers inside them are kept; string literals
+     * are not tracked, as none can appear before the table's column list that is matched.
      */
     private static String stripComments(String sql) {
         if (sql == null) {
@@ -170,7 +311,13 @@ class DSQLSqlScriptExecutor implements SqlScriptExecutor {
         int i = 0;
         int n = sql.length();
         while (i < n) {
-            if (sql.charAt(i) == '-' && i + 1 < n && sql.charAt(i + 1) == '-') {
+            if (sql.charAt(i) == '"') {
+                // A doubled "" escape just closes and reopens the identifier.
+                int close = sql.indexOf('"', i + 1);
+                int end = (close < 0) ? n : close + 1;
+                out.append(sql, i, end);
+                i = end;
+            } else if (sql.charAt(i) == '-' && i + 1 < n && sql.charAt(i + 1) == '-') {
                 int nl = sql.indexOf('\n', i + 2);
                 i = (nl < 0) ? n : nl + 1;
                 out.append(' ');
