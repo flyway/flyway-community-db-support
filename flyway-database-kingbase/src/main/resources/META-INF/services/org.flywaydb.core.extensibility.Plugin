@@ -1,0 +1,3 @@
+org.flywaydb.community.database.kingbasemysql.KingbaseMysqlDatabaseType
+org.flywaydb.community.database.kingbaseoracle.KingbaseOracleDatabaseType
+org.flywaydb.community.database.kingbasesqlserver.KingbaseSQLServerDatabaseType
