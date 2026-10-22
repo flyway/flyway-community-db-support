@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-community-db-support</artifactId>
-        <version>10.26.1</version>
+        <version>10.26.2</version>
     </parent>
 
     <artifactId>flyway-database-tidb</artifactId>
