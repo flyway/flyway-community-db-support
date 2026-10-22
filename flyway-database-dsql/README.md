@@ -139,8 +139,8 @@ and blocks (via `sys.wait_for_job`) until the build finishes; if it fails, the m
 - **SQL migrations only** — Java migrations can capture the `job_id` and call `sys.wait_for_job`
   themselves.
 - **A failed build leaves an `INVALID` index** — neither DSQL nor the migration drops it (a timed-out
-  wait may front a build that still succeeds). Drop it before rerunning; `IF NOT EXISTS` can silently
-  accept the `INVALID` index.
+  wait may front a build that still succeeds). Drop it before rerunning; `IF NOT EXISTS` fails on
+  the `INVALID` index rather than accepting it.
 
 ## Not Yet Supported
 
