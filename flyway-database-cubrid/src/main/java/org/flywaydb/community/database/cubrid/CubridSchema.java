@@ -19,6 +19,7 @@
  */
 package org.flywaydb.community.database.cubrid;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import org.flywaydb.core.internal.database.base.Schema;
 import org.flywaydb.core.internal.jdbc.JdbcTemplate;
@@ -60,8 +61,23 @@ public class CubridSchema extends Schema<CubridDatabase, CubridTable> {
 
     @Override
     protected void doClean() throws SQLException {
+        dropForeignKeys();
+
         for (CubridTable table : doAllTables()) {
             table.doDrop();
+        }
+    }
+
+    private void dropForeignKeys() throws SQLException {
+        for (CubridTable table : doAllTables()) {
+            try (ResultSet resultSet = database.getJdbcMetaData().getImportedKeys(null, name, table.getName())) {
+                while (resultSet.next()) {
+                    String foreignKeyName = resultSet.getString("FK_NAME");
+                    String foreignKeyTableName = resultSet.getString("FKTABLE_NAME");
+                    jdbcTemplate.execute("ALTER TABLE " + database.quote(foreignKeyTableName)
+                        + " DROP CONSTRAINT " + database.quote(foreignKeyName));
+                }
+            }
         }
     }
 
