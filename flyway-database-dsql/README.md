@@ -99,7 +99,7 @@ outside a transaction.
 
 Be aware of these per-transaction limits when writing migrations:
 
-- Maximum 3,000 rows
+- Maximum 3,000 row modifications
 - Maximum 10 MiB data size
 - Maximum 5 minutes duration
 
