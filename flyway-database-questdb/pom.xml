@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-community-db-support</artifactId>
-        <version>10.26.2</version>
+        <version>10.26.3</version>
     </parent>
 
     <artifactId>flyway-database-questdb</artifactId>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.21.0</version>
+            <version>1.21.4</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
