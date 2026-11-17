@@ -38,6 +38,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <optional>true</optional>
+            <version>2.18.0</version>
         </dependency>
     </dependencies>
 
