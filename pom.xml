@@ -49,6 +49,7 @@
 
     <properties>
         <version.flyway>13.12.2</version.flyway>
+        <version.lombok>1.18.46</version.lombok>
     </properties>
 
     <dependencyManagement>
