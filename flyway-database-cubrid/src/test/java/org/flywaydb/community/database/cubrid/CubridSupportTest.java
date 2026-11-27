@@ -147,6 +147,37 @@ class CubridSupportTest {
         assertThat(tableNames()).doesNotContain("app_user", "flyway_schema_history");
     }
 
+    @Test
+    void cleansTablesWithForeignKeys() throws SQLException {
+        Flyway flyway = Flyway.configure()
+            .communityDBSupportEnabled(true)
+            .dataSource(jdbcUrl(), USER_SCHEMA, "")
+            .defaultSchema(USER_SCHEMA)
+            .cleanDisabled(false)
+            .load();
+
+        try {
+            try (Connection connection = connection();
+                 Statement statement = connection.createStatement()) {
+                statement.execute("CREATE TABLE parent_table (id INT PRIMARY KEY)");
+                statement.execute("CREATE TABLE child_table (id INT PRIMARY KEY, parent_id INT, "
+                    + "CONSTRAINT fk_child_parent FOREIGN KEY (parent_id) REFERENCES parent_table(id))");
+            }
+
+            assertThat(tableNames()).contains("parent_table", "child_table");
+
+            flyway.clean();
+
+            assertThat(tableNames()).doesNotContain("parent_table", "child_table");
+        } finally {
+            try (Connection connection = connection();
+                 Statement statement = connection.createStatement()) {
+                statement.execute("DROP TABLE IF EXISTS child_table");
+                statement.execute("DROP TABLE IF EXISTS parent_table");
+            }
+        }
+    }
+
     private static Flyway flyway(String... locations) {
         return Flyway.configure()
             .communityDBSupportEnabled(true)
