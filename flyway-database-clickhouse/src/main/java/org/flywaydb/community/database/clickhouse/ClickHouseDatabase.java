@@ -20,6 +20,7 @@
 
 package org.flywaydb.community.database.clickhouse;
 
+import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.database.base.Database;
 import org.flywaydb.core.internal.database.base.Table;
@@ -50,6 +51,22 @@ public class ClickHouseDatabase extends Database<ClickHouseConnection> {
 
     public String getZookeeperPath() {
         return configuration.getPluginRegister().getPlugin(ClickHouseConfigurationExtension.class).getZookeeperPath();
+    }
+
+    private boolean isReplicatedDatabase() {
+        final String dbName = getMainConnection().getCurrentSchema().getName();
+
+        String engine = null;
+        try {
+            engine = getSystemConnection().getJdbcTemplate().queryForString(
+                    "SELECT engine FROM system.databases WHERE name = ?",
+                    dbName
+            );
+        } catch (SQLException e) {
+            throw new FlywayException(e);
+        }
+
+        return engine != null && "Replicated".equalsIgnoreCase(engine.trim());
     }
 
     public ClickHouseConnection getSystemConnection() {
@@ -119,7 +136,14 @@ public class ClickHouseDatabase extends Database<ClickHouseConnection> {
         String clusterName = getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
 
-        String script = "CREATE TABLE IF NOT EXISTS " + table + (isClustered ? (" ON CLUSTER " + clusterName) : "") + "(" +
+        // ClickHouse throws:
+        //   Code: 48. DB::Exception: ON CLUSTER is not allowed for Replicated database
+        // when executing DDL inside a database created with ENGINE = Replicated(...).
+        // Replicated databases already propagate DDL automatically, so ON CLUSTER
+        // must be skipped to avoid this error.
+        boolean useOnCluster = isClustered && !isReplicatedDatabase();
+
+        String script = "CREATE TABLE IF NOT EXISTS " + table + (useOnCluster ? (" ON CLUSTER " + clusterName) : "") + "(" +
                 "    installed_rank Int32," +
                 "    version Nullable(String)," +
                 "    description String," +
