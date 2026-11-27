@@ -119,7 +119,7 @@ public class ClickHouseDatabase extends Database<ClickHouseConnection> {
         String clusterName = getClusterName();
         boolean isClustered = StringUtils.hasText(clusterName);
 
-        String script = "CREATE TABLE IF NOT EXISTS " + table + (isClustered ? (" ON CLUSTER " + clusterName) : "") + "(" +
+        String script = "CREATE TABLE IF NOT EXISTS " + table + (isClustered ? (" ON CLUSTER '" + clusterName + "'") : "") + "(" +
                 "    installed_rank Int32," +
                 "    version Nullable(String)," +
                 "    description String," +
